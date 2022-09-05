@@ -1,0 +1,306 @@
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on 2022
+
+@author: Thomas Pavot
+"""
+import os
+import numpy as np
+import cv2
+import cv2.aruco as aruco
+import sys, time
+import math
+
+from threading import Thread
+import threading
+
+from math import atan2, cos, radians, sin, sqrt, pi
+from dronekit import connect, VehicleMode, LocationGlobalRelative, LocationGlobal
+from pymavlink import mavutil 
+from array import array
+from datetime import datetime
+from picamera import PiCamera,Color
+from picamera.array import PiRGBArray
+
+from detection_target import Detection
+from commande_drone import Drone
+
+
+
+###################### Dronekit ####################
+
+
+#--------------------- Connection ----------------------------
+
+print("Connecting...")
+chemin_Drone = '/dev/ttyACM0'
+global vehicle
+vehicle = connect(chemin_Drone, wait_ready=True, baud=57600, heartbeat_timeout=2)
+
+print("Connection OK")
+
+#--------------------- Parametres du vehicule ----------------------------
+vitesse = .3 #m/s
+altitudeDeVol = 20
+#exemple de position GPS
+  #locationMaisonStrasbourgTerrainBasket = LocationGlobalRelative(48.574458, 7.771747, 10)
+GPS_target_delivery = LocationGlobalRelative(48.7068570, 7.7344260, altitudeDeVol)
+
+
+###################### Thread creation et appel de fonction ####################
+
+class myThread (threading.Thread):
+
+  
+
+  def __init__(self, threadID, name, altitudeDeVol, vehicle):
+    threading.Thread.__init__(self)
+    self.threadID = threadID
+    self.name = name
+    self.altitudeDeVol = altitudeDeVol
+    self.vehicle = vehicle
+    
+  def run(self):
+    print ("Starting " + self.name)
+    
+    
+    # setup variable global pour les threads
+    global compteur_no_detect
+    compteur_no_detect = 0
+    global compteur_whiteSquare
+    compteur_whiteSquare = 0
+    global compteur_aruco
+    compteur_aruco = 0
+    global package_dropped
+    package_dropped = False
+    global x_centerPixel_target
+    x_centerPixel_target = None
+    global y_centerPixel_target
+    y_centerPixel_target = None
+    global x_imageCenter
+    x_imageCenter = 0
+    global y_imageCenter
+    y_imageCenter = 0
+    global altitudeAuSol
+    global altitudeRelative
+    global longitude
+    global latitude
+    
+    if self.name == "Thread_Detection_target":   
+      
+      while True :
+        
+        # actualisation de l altitude et gps
+        altitudeAuSol = vehicle.rangefinder.distance
+        altitudeRelative = vehicle.location.global_relative_frame.alt
+        longitude = vehicle.location.global_relative_frame.lon
+        latitude = vehicle.location.global_relative_frame.lat
+        
+        #le srcipt Detection Target
+        x_imageCenter, y_imageCenter, x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude,longitude,altitudeAuSol)
+        
+        
+        if marker_found == True :
+          compteur_aruco += 1 
+          compteur_whiteSquare = 0
+          compteur_no_detect = 0
+          dist_center = math.sqrt((x_imageCenter-x_centerPixel_target)**2+(y_imageCenter-y_centerPixel_target)**2)
+          print("dist_center = "+str(dist_center))
+          
+          if dist_center <= 50 and altitudeAuSol < 1.5 :  # condition pour faire le larguage
+            print("Larguage !")
+            Drone.move_servo(vehicle,10,True)
+            time.sleep(0.5)
+            package_dropped = True
+            
+            break
+          
+        
+        elif whiteSquare_found == True :
+          compteur_whiteSquare += 1
+          compteur_aruco = 0
+          compteur_no_detect = 0
+        
+        else :
+          compteur_no_detect =+ 1
+          compteur_aruco = 0
+          compteur_whiteSquare = 0
+            
+        print("compteur_aruco = "+str(compteur_aruco))
+        print("compteur_whiteSquare = "+str(compteur_whiteSquare))
+        print("compteur_no_detect = "+str(compteur_no_detect))
+        
+        
+        
+        
+        
+        if Drone.get_mode(vehicle) != "GUIDED"  or altitudeRelative > 30 : #arret du Thread en cas de changement de mode, de larguage ou d'altitude sup a 25m
+          
+          break
+      
+      
+      
+      
+      print("fin du thread : "+self.name)
+
+    
+    
+    
+    if self.name == "Thread_asservissement":
+      
+      dErrx = 0
+      dErry = 0
+      errsumx = 0
+      errsumy = 0
+      
+      last_errx = 0
+      last_erry = 0
+      
+      # PD Coefficients
+      kpx = 0.004
+      kpy = 0.004
+      kdx = 0.0001  # 0.00001 working "fine" for both
+      kdy = 0.0001
+      kix = 0.000001  # 0.0000001
+      kiy = 0.000001
+      
+      vx = 0
+      vy = 0
+      vz = 0
+        
+      while True :
+        
+        if Drone.get_mode(vehicle) != "GUIDED" or package_dropped == True :
+          Drone.set_velocity(vehicle,0, 0, 0, 1)
+          break
+          
+
+             
+        if altitudeAuSol < 5 :
+          kpx = 0.001
+          kpy = 0.001
+          #kix = 0.000001  # 0.0000001
+          #kiy = 0.000001
+        else :
+          kpx = 0.002
+          kpy = 0.002
+          
+          
+        if x_centerPixel_target == None or y_centerPixel_target == None :   # echec Detection
+          
+          if compteur_no_detect > 10 :   #on fixe le nombre d'image consecutive sans Detection pour considerer qu il ne detecte pas
+            if altitudeRelative > 30 :  # si on altitudeRelative sup a 30m stop le thread
+              Drone.set_velocity(vehicle,0, 0, 0, 1)
+              #print ("altitudeRelative > 30")
+              break
+            else :  # pas de Detection Drone prend de l altitude
+              vx = 0
+              vy = 0
+              vz = -0.5
+              Drone.set_velocity(vehicle,vx, vy, vz, 1)
+              #print ("prise d'altitude vz = -0.5")
+          
+          elif compteur_no_detect > 2 :   # fixer la position du Drone en cas de non Detection
+            Drone.set_velocity(vehicle,0, 0, 0, 1)
+            #print ("compteur_no_detect > 2   stabilisation drone")
+              
+                 
+        
+        else :  # Detection ok 
+      
+          dist_center = math.sqrt((x_imageCenter-x_centerPixel_target)**2+(y_imageCenter-y_centerPixel_target)**2)
+          errx = x_imageCenter - x_centerPixel_target
+          erry = y_imageCenter - y_centerPixel_target
+          if abs(errx) <= 10:   #marge de 10pxl pour considerer que la cible est au centre de l image
+                  errx = 0
+          if abs(erry) <= 10:
+                  erry = 0
+        
+          # PD control
+          dErrx = (errx - last_errx)# / delta_time
+          dErry = (erry - last_erry)# / delta_time
+          errsumx += errx# * delta_time
+          errsumy += erry# * delta_time
+        
+          #~ print("errsumx: %s, errsumy: %s" % (errsumy, errsumy))
+        
+          vx = (kpx * errx) + (kdx * dErrx) + (kix * errsumx)
+          vy = (kpy * erry) + (kdy * dErry) + (kiy * errsumy)
+          
+          if altitudeAuSol < 3 :
+            vz = 0.2  # a changer pour descendre
+          elif altitudeAuSol > 7 :
+            vz = 1  # a changer pour descendre
+          else :
+            vz = 0.5
+          # Establish limit to outputs
+          vx = min(max(vx, -5.0), 5.0)
+          vy = min(max(vy, -5.0), 5.0)
+          vx = -vx                        # High opencv is south Dronekit
+        
+          # Dronekit
+          # X positive Forward / North
+          # Y positive Right / East
+          # Z positive down
+        
+          # Last error for Derivative
+          
+          last_errx = errx
+          last_erry = erry
+          
+          if dist_center <= 50 :
+            Drone.set_velocity(vehicle,vy, vx, vz, 1) 
+            #print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center <= 30")
+          else :
+            #lancer un deplacement pour ce rapprocher du centre sans descendre ou monter
+            if altitudeAuSol < 2 :
+              vz = 0
+
+            Drone.set_velocity(vehicle,vy, vx, vz, 1)  # Pour le sense de la camera, X controle le 'east' et Y controle le 'North'
+            #print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center decale")
+        
+
+      print("fin du thread : "+self.name)
+
+
+
+def mission_larguage_GPS_connu(GPS_target_delivery):
+
+  
+  #########verrouillage servomoteur et procedure arm and takeoff
+  Drone.lancement_decollage(vehicle,altitudeDeVol)
+  #########Drone se deplace sur cible
+  Drone.goto(vehicle, GPS_target_delivery, vitesse)
+  
+  
+  #Drone.move_servo(vehicle,10, False)
+  #########Create new threads
+  myThread_Detection_target= myThread(1, "Thread_Detection_target",altitudeDeVol,None)
+  myThread_asservissement= myThread(2, "Thread_asservissement",altitudeDeVol,vehicle)  
+
+  #########debut de la Detection et du mouvement
+  myThread_Detection_target.start()
+  time.sleep(1)
+  myThread_asservissement.start()
+  
+  
+  #########attente de la fin de la Detection et du mouvement
+  myThread_Detection_target.join()
+  myThread_asservissement.join()
+  
+  #########repart en mode RTL
+  Drone.set_mode(vehicle,"RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
+
+
+
+if __name__ == "__main__":
+
+  # choix de la mission
+  mission_larguage_GPS_connu(GPS_target_delivery)
+  
+  print ("fin du code")
+    
+    
+ 
