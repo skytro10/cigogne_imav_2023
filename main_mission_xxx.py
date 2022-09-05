@@ -47,6 +47,7 @@ altitudeDeVol = 20
 #exemple de position GPS
   #locationMaisonStrasbourgTerrainBasket = LocationGlobalRelative(48.574458, 7.771747, 10)
 GPS_target_delivery = LocationGlobalRelative(48.7068570, 7.7344260, altitudeDeVol)
+research_whiteSquare = True
 
 
 ###################### Thread creation et appel de fonction ####################
@@ -55,12 +56,13 @@ class myThread (threading.Thread):
 
   
 
-  def __init__(self, threadID, name, altitudeDeVol, vehicle):
+  def __init__(self, threadID, name, altitudeDeVol, vehicle,research_whiteSquare):
     threading.Thread.__init__(self)
     self.threadID = threadID
     self.name = name
     self.altitudeDeVol = altitudeDeVol
     self.vehicle = vehicle
+    self.research_whiteSquare = research_whiteSquare
     
   def run(self):
     print ("Starting " + self.name)
@@ -99,7 +101,7 @@ class myThread (threading.Thread):
         latitude = vehicle.location.global_relative_frame.lat
         
         #le srcipt Detection Target
-        x_imageCenter, y_imageCenter, x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude,longitude,altitudeAuSol)
+        x_imageCenter, y_imageCenter, x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude,longitude,altitudeAuSol,research_whiteSquare)
         
         
         if marker_found == True :
@@ -277,8 +279,8 @@ def mission_larguage_GPS_connu(GPS_target_delivery):
   
   #Drone.move_servo(vehicle,10, False)
   #########Create new threads
-  myThread_Detection_target= myThread(1, "Thread_Detection_target",altitudeDeVol,None)
-  myThread_asservissement= myThread(2, "Thread_asservissement",altitudeDeVol,vehicle)  
+  myThread_Detection_target= myThread(1, "Thread_Detection_target",altitudeDeVol,None,research_whiteSquare)
+  myThread_asservissement= myThread(2, "Thread_asservissement",altitudeDeVol,vehicle,research_whiteSquare)  
 
   #########debut de la Detection et du mouvement
   myThread_Detection_target.start()
