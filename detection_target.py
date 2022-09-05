@@ -79,7 +79,7 @@ class Detection:
   closeToAruco = False
 
 
-  def Detection_aruco(latitude,longitude,altitude):
+  def Detection_aruco(latitude,longitude,altitude,research_whiteSquare):
     
     #--- Capturer le videocamera 
     Detection.camera.capture(Detection.rawCapture, format="bgr")
@@ -100,7 +100,7 @@ class Detection:
     
     
     
-    ########################## traitement pour aruco peut etre a optimiser avec Detection pour carre blanc
+    ########################## traitement pour aruco
     gray  = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) #-- remember, OpenCV stores color images in Blue, Green, Red
   
     #-- Trouver tous les marquers dans l'image 
@@ -118,6 +118,8 @@ class Detection:
         y_sum = corners[0][0][0][1]+ corners[0][0][1][1]+ corners[0][0][2][1]+ corners[0][0][3][1]
         x_centerPixel_target = int(x_sum*.25)
         y_centerPixel_target = int(y_sum*.25)
+        arrete_marker_pxl = math.sqrt((corners[0][0][0][0]-corners[0][0][1][0])**2+(corners[0][0][0][1]-corners[0][0][1][1])**2)
+        
         
         cv2.line(frame, (x_centerPixel_target, y_centerPixel_target-20), (x_centerPixel_target, y_centerPixel_target+20), (0, 0, 255), 2)
         cv2.line(frame, (x_centerPixel_target-20, y_centerPixel_target), (x_centerPixel_target+20, y_centerPixel_target), (0, 0, 255), 2)
@@ -127,7 +129,7 @@ class Detection:
         print("found_count : "+str(Detection.found_count))
         
     ################## Detection carree blanc####################      
-    else :
+    elif research_whiteSquare == True :
       Detection.marker_found = False
       ########################## traitement pour Detection carre blanc
       blur = cv2.GaussianBlur(frame,(5,5),0)
@@ -174,6 +176,7 @@ class Detection:
   
             x_centerPixel_target = np.mean(c, axis=0)[0][0]
             y_centerPixel_target = np.mean(c, axis=0)[0][1]
+            arrete_marker_pxl = math.sqrt((area)
             
             cv2.drawContours(frame, [c], -1, (255, 0, 0), 1)
             cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 0, 255), 2)
@@ -203,9 +206,7 @@ class Detection:
     return Detection.x_imageCenter, Detection.y_imageCenter, x_centerPixel_target, y_centerPixel_target, Detection.marker_found, Detection.whiteSquare_found
       
 
-#### pour tester le code
 
-#Detection_aruco(1,2,6.36)
       
 
   
