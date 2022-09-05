@@ -115,29 +115,20 @@ class Drone:
   		self.vehicle.send_mavlink(msg)
   		time.sleep(0.1)
      
-  def get_distance_metres(aLocation1, aLocation2):  ### changer pour code different de lat1 - lat2 ...
+  def get_distance_metres(aLocation1, aLocation2):
     """
-    Returns the ground distance in metres between two LocationGlobal objects.
-
-    This method is an approximation, and will not be accurate over large distances and close to the 
-    earth's poles. It comes from the ArduPilot test code: 
-    https://github.com/diydrones/ardupilot/blob/master/Tools/autotest/common.py
+    Calculate distance in meters between Latitude/Longitude points.
+    
+    This uses the ‘haversine’ formula to calculate the great-circle
+    distance between two points – that is, the shortest distance over
+    the earth’s surface earth's poles. More informations at:
+    https://www.movable-type.co.uk/scripts/latlong.html
     """
-    dlat = aLocation2.lat - aLocation1.lat
-    dlong = aLocation2.lon - aLocation1.lon
-    return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
-   
-  def goto(self, targetLocation, vitesse=2.5):    ### modif changer la condition validant Reached target par une condition GPS avec rayon  
-    ############################################vehicle.airspeed(vitesse)
-    ############################################print("Vitesse de vol : "+str(vitesse))
-    currentLocation = self.vehicle.location.global_relative_frame
-    targetDistance = Drone.get_distance_metres(currentLocation, targetLocation)
-
     # Haversine formula to compute distance between two GPS points
-    targLat = point.lat
-    targLon = point.lon
-    realLat = vehicle.location.global_relative_frame.lat
-    realLon = vehicle.location.global_relative_frame.lon
+    targLat = aLocation1.lat
+    targLon = aLocation1.lon
+    realLat = aLocation2.lat
+    realLon = aLocation2.lon
 
     R = 6371000  # Mean earth radius (meters)
     phi_1 = radians(targLat)
@@ -147,21 +138,31 @@ class Drone:
     a = sin(delta_phi/2)**2 + cos(phi_1) * cos(phi_2) * sin(delta_theta/2)**2
     c = 2 * atan2(sqrt(a), sqrt(1-a))
     d = R * c
-    print("Distance to the GPS target: %.2fm" % d)
 
-    if d <= 20:         # If the distance to the target is less than 20m
-        arrived = True  # Change the boolean variable to True
-        print("Arrived at GPS target !")
+    return d
+   
+  def goto(self, targetLocation, distanceAccuracy):
+    """
+    Function to move to a target location with a given precision.
     
-    self.vehicle.simple_goto(targetLocation)                          
-    
-    while self.vehicle.mode.name=="GUIDED": #Stop action if we are no longer in guided mode.
-      #print "DEBUG: mode: %s" % vehicle.mode.name
-      remainingDistance=Drone.get_distance_metres(self.vehicle.location.global_relative_frame, targetLocation)
+    Based on the simple_goto function from DroneKit completed with a
+    wait function checking if the drone is in a desired accuracy
+    circle around the target location.
+    """
+    # Simple goto DroneKit function
+    self.vehicle.simple_goto(targetLocation)
+
+    # Stop action if we are no longer in GUIDED mode
+    while self.vehicle.mode.name=="GUIDED": 
+      currentLocation = self.vehicle.location.global_relative_frame
+      remainingDistance = self.get_distance_metres(aLocation1, aLocation2)
       print("Distance to target: ", remainingDistance)
-      if remainingDistance<=targetDistance*0.1: #Just below target, in case of undershoot.
-          print("Reached target")
-          break;
+      # print("Distance to the GPS target: %.2fm" % d)
+
+      # If the distance to the target verifies the distance accuracy
+      if remainingDistance <= distanceAccuracy:
+        print("Reached target")
+        break  # Then break the waiting loop
       time.sleep(1)
 
   def lancement_decollage(self, altitudeDeVol):
@@ -170,12 +171,12 @@ class Drone:
     #verrouillage servomoteur de larguage
     self.move_servo(10,False)
     while True:
-            print ("en attente de auto")
-            print ("mode: %s" % self.vehicle.mode)
-            if (self.vehicle.mode == VehicleMode("AUTO")):
-                    self.arm_and_takeoff(altitudeDeVol)
-                    break
-            time.sleep(0.25)
+      print ("en attente de auto")
+      print ("mode: %s" % self.vehicle.mode)
+      if (self.vehicle.mode == VehicleMode("AUTO")):
+        self.arm_and_takeoff(altitudeDeVol)
+        break
+      time.sleep(0.25)
         
 """
 # test du code
