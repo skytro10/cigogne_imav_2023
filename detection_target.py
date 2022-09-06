@@ -55,9 +55,14 @@ class Detection:
   self.notfound_count = 0
   
   #--------------- Resolution ---------------------------
-  
-  horizotanle_res = 640 
-  vertical_res = 480
+
+  focal_length = 3.60   # Focal length [mm]
+  horizotal_res = 640   # Horizontal resolution (x dimension) [px] 
+  vertical_res = 480    # Vertical resolution (y dimension) [px]
+  sensor_length = 3.76  # Sensor length (x dimension) [mm]
+  sensor_height = 2.74  # Sensor length (y dimension) [mm]  
+  self.dist_coeff_x = sensor_length/(focal_length*horizotal_res)
+  self.dist_coeff_y = sensor_height/(focal_length*vertical_res)
   self.x_imageCenter = int(horizotanle_res/2)
   self.y_imageCenter = int(vertical_res/2)
   
@@ -205,3 +210,12 @@ class Detection:
     print("Image saved !")
     
     return self.x_imageCenter, self.y_imageCenter, x_centerPixel_target, y_centerPixel_target, self.marker_found, self.whiteSquare_found
+
+  def get_GPS_location(latitude, longitude, altitude):
+    pass
+
+  def get_distance_image(x_image_center, y_image_center, x_target_center, y_target_center, altitude):
+    dist_x = altitude*abs(x_image_center-x_target_center)*self.dist_coeff_x
+    dist_y = altitude*abs(y_image_center-y_target_center)*self.dist_coeff_y
+    return sqrt(dist_x**2+dist_y**2)
+    

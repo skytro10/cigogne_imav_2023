@@ -49,6 +49,8 @@ while True :
   
   x_imageCenter, y_imageCenter, x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude,longitude,altitudeAuSol)
   print( "alt : "+ str(altitudeAuSol))
+  measured_distance = Detection.get_distance_image(x_imageCenter, y_imageCenter, x_centerPixel_target, y_centerPixel_target)
+  print("distance :" + str(measured_distance))
 
 
 """print( "lat : "+ str(latitude))
