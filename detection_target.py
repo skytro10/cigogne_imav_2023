@@ -56,7 +56,7 @@ class Detection:
     self.notfound_count = 0
   
     #--------------- Resolution ---------------------------
-
+    # Focal length and 
     focal_length = 3.60   # Focal length [mm]
     horizotal_res = 640   # Horizontal resolution (x dimension) [px] 
     vertical_res = 480    # Vertical resolution (y dimension) [px]
@@ -247,6 +247,6 @@ class Detection:
     if x_target_center == None:
       return None
     else:
-      dist_x = altitude*abs(self.x_imageCenter-x_target_center)*self.dist_coeff_x
-      dist_y = altitude*abs(self.y_imageCenter-y_target_center)*self.dist_coeff_y
+      dist_x = altitude*(x_target_center - self.x_imageCenter)*self.dist_coeff_x
+      dist_y = altitude*(y_target_center - self.y_imageCenter)*self.dist_coeff_y
       return sqrt(dist_x**2+dist_y**2)
