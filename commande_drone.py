@@ -268,7 +268,7 @@ class Drone:
         print(" Write mission to file")
         file_.write(output)
         
-  def printfile(aFileName):
+  def printfile(self, aFileName):
     """
     Print a mission file to demonstrate "round trip"
     """

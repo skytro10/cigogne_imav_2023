@@ -38,6 +38,7 @@ research_whiteSquare = True
 distanceAccuracy = 2 # rayon en metre pour valider un goto
 
 
+
 ###################### Thread creation et appel de fonction ####################
 
 class myThread(threading.Thread):
@@ -91,14 +92,14 @@ class myThread(threading.Thread):
         latitude = drone_object.vehicle.location.global_relative_frame.lat
         
         #le srcipt Detection Target
-        x_imageCenter, y_imageCenter, x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude,longitude,altitudeAuSol,research_whiteSquare)
+        x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude,longitude,altitudeAuSol,research_whiteSquare)
         
         
         if marker_found == True :
           compteur_aruco += 1 
           compteur_whiteSquare = 0
           compteur_no_detect = 0
-          dist_center = math.sqrt((x_imageCenter-x_centerPixel_target)**2+(y_imageCenter-y_centerPixel_target)**2)
+          dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(y_imageCenter-y_centerPixel_target)**2)
           print("dist_center = "+str(dist_center))
           
           if dist_center <= 50 and altitudeAuSol < 1.5 :  # condition pour faire le larguage
@@ -202,9 +203,9 @@ class myThread(threading.Thread):
         
         else :  # Detection ok 
       
-          dist_center = math.sqrt((x_imageCenter-x_centerPixel_target)**2+(y_imageCenter-y_centerPixel_target)**2)
-          errx = x_imageCenter - x_centerPixel_target
-          erry = y_imageCenter - y_centerPixel_target
+          dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(detection_object.y_imageCenter-y_centerPixel_target)**2)
+          errx = detection_object.x_imageCenter - x_centerPixel_target
+          erry = detection_object.y_imageCenter - y_centerPixel_target
           if abs(errx) <= 10:   #marge de 10pxl pour considerer que la cible est au centre de l image
                   errx = 0
           if abs(erry) <= 10:
@@ -265,8 +266,10 @@ class myThread(threading.Thread):
 
 def mission_larguage_GPS_connu(GPS_target_delivery):
   
-  drone_object = Drone
-  drone_object.connectionPixhawk()
+  drone_object = Drone()    #permet de connecter le drone via dronekit en creant l objet drone
+  detection_object = Detection(PiCamera())  # creer l objet detection
+  
+  
   #########verrouillage servomoteur et procedure arm and takeoff
   drone_object.lancement_decollage(altitudeDeVol)
   #########Drone se deplace sur cible
