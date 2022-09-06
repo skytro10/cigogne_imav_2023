@@ -134,7 +134,7 @@ class Drone:
 
     R = 6371000  # Mean earth radius (meters)
     phi_1 = radians(targLat)
-    phi_2 = radians(targLat)
+    phi_2 = radians(realLat)
     delta_phi = radians(targLat-realLat)    # Latitude difference (radians)
     delta_theta = radians(targLon-realLon)  # Longitude difference (radians)
     a = sin(delta_phi/2)**2 + cos(phi_1) * cos(phi_2) * sin(delta_theta/2)**2
