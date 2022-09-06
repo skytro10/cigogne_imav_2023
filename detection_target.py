@@ -209,15 +209,15 @@ class Detection:
     cv2.imwrite(os.path.join(self.path, name), frame)
     print("Image saved !")
     
-    return self.x_imageCenter, self.y_imageCenter, x_centerPixel_target, y_centerPixel_target, self.marker_found, self.whiteSquare_found
+    return x_centerPixel_target, y_centerPixel_target, self.marker_found, self.whiteSquare_found
 
   def get_GPS_location(latitude, longitude, altitude):
     pass
 
-  def get_distance_image(x_image_center, y_image_center, x_target_center, y_target_center, altitude):
-    print(x_image_center)
+  def get_distance_image(self, x_target_center, y_target_center, altitude):
+    print(self.x_image_center)
     print(x_target_center)
-    dist_x = altitude*abs(x_image_center-x_target_center)*self.dist_coeff_x
-    dist_y = altitude*abs(y_image_center-y_target_center)*self.dist_coeff_y
+    dist_x = altitude*abs(self.x_image_center-x_target_center)*self.dist_coeff_x
+    dist_y = altitude*abs(self.y_image_center-y_target_center)*self.dist_coeff_y
     return sqrt(dist_x**2+dist_y**2)
     
