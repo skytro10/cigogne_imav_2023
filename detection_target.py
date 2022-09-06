@@ -38,51 +38,57 @@ class Detection:
   global aruco_dict
   global parameters
   global closeToAruco"""
-  
-  self.marker_found = False
-  self.whiteSquare_found = False 
-  self.camera = PiCamera()
-  self.camera.brightness = 50
-  self.camera.resolution = (640, 480)
-  #camera.resolution = (1920, 1080)
-  self.camera.framerate = 32
-  self.rawCapture = PiRGBArray(camera, size=(640, 480))
-  
-  #--- Define Tag
-  self.id_to_find  = 69
-  self.marker_size  = 5 #- [cm]
-  self.found_count = 0 
-  self.notfound_count = 0
-  
-  #--------------- Resolution ---------------------------
-  
-  horizotanle_res = 640 
-  vertical_res = 480
-  self.x_imageCenter = int(horizotanle_res/2)
-  self.y_imageCenter = int(vertical_res/2)
-  
-  img_compteur = 0
-  dossier = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
-  parent_dir = '/home/housso97/Desktop/code_IMAV2022_Thomas/saved_images'
-  self.path = os.path.join(parent_dir, dossier)
-  os.mkdir(path)
-  
-  #--- Camera calibration path
-  calib_path  = "/home/housso97/Desktop/camera_01/cameraa_02/"
-  camera_matrix   = np.loadtxt(calib_path+'cameraMatrix.txt', delimiter=',')
-  camera_distortion   = np.loadtxt(calib_path+'cameraDistortion.txt', delimiter=',')
-  
-  #--- Definir le dictionnaire aruco 
-  aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_5X5_1000)
-  parameters  = aruco.DetectorParameters_create()
-  
-  closeToAruco = False
 
-  #--------------- Saved Markers ---------------------------
-  self.saved_markers = {}
+  def __init__(self, camera):
+    self.marker_found = False
+    self.whiteSquare_found = False 
+    self.camera = camera
+    self.camera.brightness = 50
+    self.camera.resolution = (640, 480)
+    #camera.resolution = (1920, 1080)
+    self.camera.framerate = 32
+    self.rawCapture = PiRGBArray(self.camera, size=(640, 480))
+  
+    #--- Define Tag
+    self.id_to_find  = 69
+    self.marker_size  = 5 #- [cm]
+    self.found_count = 0 
+    self.notfound_count = 0
+  
+    #--------------- Resolution ---------------------------
+
+    focal_length = 3.60   # Focal length [mm]
+    horizotal_res = 640   # Horizontal resolution (x dimension) [px] 
+    vertical_res = 480    # Vertical resolution (y dimension) [px]
+    sensor_length = 3.76  # Sensor length (x dimension) [mm]
+    sensor_height = 2.74  # Sensor length (y dimension) [mm]  
+    self.dist_coeff_x = sensor_length/(focal_length*horizotal_res)
+    self.dist_coeff_y = sensor_height/(focal_length*vertical_res)
+    self.x_imageCenter = int(horizotal_res/2)
+    self.y_imageCenter = int(vertical_res/2)
+  
+    self.img_compteur = 0
+    dossier = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
+    parent_dir = '/home/housso97/Desktop/code_IMAV2022_Thomas/saved_images'
+    self.path = os.path.join(parent_dir, dossier)
+    os.mkdir(self.path)
+  
+    #--- Camera calibration path
+    calib_path  = "/home/housso97/Desktop/camera_01/cameraa_02/"
+    self.camera_matrix   = np.loadtxt(calib_path+'cameraMatrix.txt', delimiter=',')
+    self.camera_distortion   = np.loadtxt(calib_path+'cameraDistortion.txt', delimiter=',')
+  
+    #--- Definir le dictionnaire aruco 
+    self.aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_5X5_1000)
+    self.parameters  = aruco.DetectorParameters_create()
+  
+    self.closeToAruco = False
+
+    #--------------- Saved Markers ---------------------------
+    self.saved_markers = {}
 
 
-  def Detection_aruco(latitude, longitude, altitude, research_whiteSquare):
+  def Detection_aruco(self, latitude, longitude, altitude, research_whiteSquare):
     
     #--- Capturer le videocamera 
     self.camera.capture(self.rawCapture, format="bgr")
@@ -111,11 +117,12 @@ class Detection:
                               cameraMatrix=self.camera_matrix, distCoeff=self.camera_distortion)
     
     print("ids : "+str(ids))
-    
+    self.marker_found = False
+    self.whiteSquare_found = False
+
     if ids is not None : # and ids[0] == Detection.id_to_find:
         
         self.marker_found = True
-        self.whiteSquare_found = False
         
         x_sum = corners[0][0][0][0]+ corners[0][0][1][0]+ corners[0][0][2][0]+ corners[0][0][3][0]
         y_sum = corners[0][0][0][1]+ corners[0][0][1][1]+ corners[0][0][2][1]+ corners[0][0][3][1]
@@ -133,7 +140,6 @@ class Detection:
         
     ################## Detection carree blanc####################      
     elif research_whiteSquare == True :
-      self.marker_found = False
       ########################## traitement pour Detection carre blanc
       blur = cv2.GaussianBlur(frame,(5,5),0)
       # Convert from BGR to HSV color space
@@ -179,7 +185,7 @@ class Detection:
   
             x_centerPixel_target = np.mean(c, axis=0)[0][0]
             y_centerPixel_target = np.mean(c, axis=0)[0][1]
-            arrete_marker_pxl = math.sqrt((area)
+            arrete_marker_pxl = math.sqrt(area)
             
             cv2.drawContours(frame, [c], -1, (255, 0, 0), 1)
             cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 0, 255), 2)
@@ -204,4 +210,17 @@ class Detection:
     cv2.imwrite(os.path.join(self.path, name), frame)
     print("Image saved !")
     
-    return self.x_imageCenter, self.y_imageCenter, x_centerPixel_target, y_centerPixel_target, self.marker_found, self.whiteSquare_found
+    return x_centerPixel_target, y_centerPixel_target, self.marker_found, self.whiteSquare_found
+
+  def get_GPS_location(latitude, longitude, altitude):
+    pass
+
+  def get_distance_image(self, x_target_center, y_target_center, altitude):
+    print(self.x_imageCenter)
+    print(x_target_center)
+    if x_target_center == None:
+      return None
+    else:
+      dist_x = altitude*abs(self.x_imageCenter-x_target_center)*self.dist_coeff_x
+      dist_y = altitude*abs(self.y_imageCenter-y_target_center)*self.dist_coeff_y
+      return sqrt(dist_x**2+dist_y**2)

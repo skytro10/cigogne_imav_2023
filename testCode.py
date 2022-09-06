@@ -36,12 +36,34 @@ from commande_drone import Drone
 
 monDrone = Drone()
 
+
 monDrone.save_mission("mission.txt")
 
 monDrone.printfile("mission.txt")
 
+detection_object = Detection(PiCamera())
+# monDrone.save_mission("mission.txt")
+
+
+# monDrone.printfile("mission.txt")
 
 
 
 
 print("Fin du test")
+
+while True :
+  altitudeAuSol = monDrone.vehicle.rangefinder.distance
+  longitude = monDrone.vehicle.location.global_relative_frame.lon
+  latitude = monDrone.vehicle.location.global_relative_frame.lat
+  
+  x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = detection_object.Detection_aruco(latitude,longitude,altitudeAuSol,False)
+  print( "alt : "+ str(altitudeAuSol))
+  measured_distance = detection_object.get_distance_image(x_centerPixel_target, y_centerPixel_target, altitudeAuSol)
+  print("distance :" + str(measured_distance))
+
+
+
+
+print("Fin du test")
+

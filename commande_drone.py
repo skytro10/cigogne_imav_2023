@@ -180,6 +180,7 @@ class Drone:
         break
       time.sleep(0.25)
 
+
   def readmission(self,aFileName):
     """
     Load a mission from a file into a list. The mission definition is in the Waypoint file
@@ -277,3 +278,8 @@ class Drone:
             print(' %s' % line.strip()) 
 
   
+
+
+
+  
+
