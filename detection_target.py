@@ -12,7 +12,7 @@ import cv2
 import cv2.aruco as aruco
 import sys, time
 import math
-from math import atan2, cos, radians, sin, sqrt, pi
+from math import asin, atan2, cos, degrees, radians, sin, sqrt, pi
 from dronekit import connect, VehicleMode, LocationGlobalRelative, LocationGlobal
 from pymavlink import mavutil 
 from array import array
@@ -56,7 +56,7 @@ class Detection:
     self.notfound_count = 0
   
     #--------------- Resolution ---------------------------
-
+    # Focal length and 
     focal_length = 3.60   # Focal length [mm]
     horizotal_res = 640   # Horizontal resolution (x dimension) [px] 
     vertical_res = 480    # Vertical resolution (y dimension) [px]
@@ -212,15 +212,41 @@ class Detection:
     
     return x_centerPixel_target, y_centerPixel_target, self.marker_found, self.whiteSquare_found
 
-  def get_GPS_location(latitude, longitude, altitude):
-    pass
+  def get_GPS_location(latitude, longitude, bearing, distance):
+    """
+    Calculate GPS target given distance and bearing from GPS start.
+    
+    Given a start point, initial bearing, and distance, this will
+    calculate the destination point and travelling along a (shortest
+    distance) great circle arc. More informations at:
+    https://www.movable-type.co.uk/scripts/latlong.html
+    """
+    # Input variables
+    initLat = latitude
+    initLon = longitude
+    theta = bearing
+    d = distance
 
-  def get_distance_image(self, x_target_center, y_target_center, altitude):
-    print(self.x_imageCenter)
-    print(x_target_center)
+    # Inverse of Haversine
+    R = 6371000  # Mean earth radius (meters)
+    phi_1 = radians(initLat)
+    lambda_1 = radians(initLon)
+    phi_2 = asin(sin(phi_1) * cos(d/R) + cos(phi_1) * sin(d/R) * cos(theta))
+    lambda_2 = lambda_1 + atan2(sin(theta) * sin(d/R) * cos(phi_1), cos(d/R) - sin(phi_1) * sin(phi_2))
+    return degrees(phi_2), degrees(lambda_2)
+
+  def get_distance_object_picture(self, x_target_center, y_target_center, altitude):
+    """
+    Calculate distance between two objects in a picture.
+    
+    Distances on x and y axes are dependant from sensor sizes and
+    resolutions (which implies two different coefficients for each
+    axis). More informations at:
+    https://photo.stackexchange.com/questions/102795/calculate-the-distance-of-an-object-in-a-picture
+    """
     if x_target_center == None:
       return None
     else:
-      dist_x = altitude*abs(self.x_imageCenter-x_target_center)*self.dist_coeff_x
-      dist_y = altitude*abs(self.y_imageCenter-y_target_center)*self.dist_coeff_y
+      dist_x = altitude*(x_target_center - self.x_imageCenter)*self.dist_coeff_x
+      dist_y = altitude*(y_target_center - self.y_imageCenter)*self.dist_coeff_y
       return sqrt(dist_x**2+dist_y**2)

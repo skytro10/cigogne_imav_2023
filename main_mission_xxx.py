@@ -292,6 +292,7 @@ def mission_larguage_GPS_connu(GPS_target_delivery):
   myThread_asservissement.join()"""
 
   # Ensure to stop a thread if the other is stopped
+  # https://stackoverflow.com/questions/323972/is-there-any-way-to-kill-a-thread
   while not myThread_Detection_target.stopped() and not myThread_asservissement.stopped():
     if myThread_Detection_target.stopped():
       myThread_asservissement.stop()
