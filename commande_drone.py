@@ -25,7 +25,7 @@ from picamera.array import PiRGBArray
 
 
 class Drone:
-  def connectionPixhawk():
+  def __init__(self):
     #--------------------- Connection ----------------------------
     print("Connecting...")
     chemin_drone = '/dev/ttyACM0'

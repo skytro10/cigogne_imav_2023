@@ -38,10 +38,11 @@ class Detection:
   global aruco_dict
   global parameters
   global closeToAruco"""
-  def __init__(self):
+
+  def __init__(self, camera):
     self.marker_found = False
     self.whiteSquare_found = False 
-    self.camera = PiCamera()
+    self.camera = camera
     self.camera.brightness = 50
     self.camera.resolution = (640, 480)
     #camera.resolution = (1920, 1080)
@@ -116,11 +117,12 @@ class Detection:
                               cameraMatrix=self.camera_matrix, distCoeff=self.camera_distortion)
     
     print("ids : "+str(ids))
-    
+    self.marker_found = False
+    self.whiteSquare_found = False
+
     if ids is not None : # and ids[0] == Detection.id_to_find:
         
         self.marker_found = True
-        self.whiteSquare_found = False
         
         x_sum = corners[0][0][0][0]+ corners[0][0][1][0]+ corners[0][0][2][0]+ corners[0][0][3][0]
         y_sum = corners[0][0][0][1]+ corners[0][0][1][1]+ corners[0][0][2][1]+ corners[0][0][3][1]
@@ -138,7 +140,6 @@ class Detection:
         
     ################## Detection carree blanc####################      
     elif research_whiteSquare == True :
-      self.marker_found = False
       ########################## traitement pour Detection carre blanc
       blur = cv2.GaussianBlur(frame,(5,5),0)
       # Convert from BGR to HSV color space
@@ -215,9 +216,11 @@ class Detection:
     pass
 
   def get_distance_image(self, x_target_center, y_target_center, altitude):
-    print(self.x_image_center)
+    print(self.x_imageCenter)
     print(x_target_center)
-    dist_x = altitude*abs(self.x_image_center-x_target_center)*self.dist_coeff_x
-    dist_y = altitude*abs(self.y_image_center-y_target_center)*self.dist_coeff_y
-    return sqrt(dist_x**2+dist_y**2)
-    
+    if x_target_center == None:
+      return None
+    else:
+      dist_x = altitude*abs(self.x_imageCenter-x_target_center)*self.dist_coeff_x
+      dist_y = altitude*abs(self.y_imageCenter-y_target_center)*self.dist_coeff_y
+      return sqrt(dist_x**2+dist_y**2)

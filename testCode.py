@@ -25,7 +25,7 @@ from picamera import PiCamera,Color
 from picamera.array import PiRGBArray
 
 
-#from detection_target import Detection
+from detection_target import Detection
 from commande_drone import Drone
 
 
@@ -35,20 +35,19 @@ from commande_drone import Drone
 #--------------------- Connection ----------------------------
 
 monDrone = Drone()
+detection_object = Detection(PiCamera())
+# monDrone.save_mission("mission.txt")
 
-monDrone.save_mission("mission.txt")
-
-monDrone.printfile("mission.txt")
+# monDrone.printfile("mission.txt")
 
 while True :
-  altitudeAuSol = vehicle.rangefinder.distance
-  longitude = vehicle.location.global_relative_frame.lon
-  latitude = vehicle.location.global_relative_frame.lat
+  altitudeAuSol = monDrone.vehicle.rangefinder.distance
+  longitude = monDrone.vehicle.location.global_relative_frame.lon
+  latitude = monDrone.vehicle.location.global_relative_frame.lat
   
-  detection_object = Detection()
-  x_imageCenter, y_imageCenter, x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = detection_object.Detection_aruco(latitude,longitude,altitudeAuSol,False)
+  x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = detection_object.Detection_aruco(latitude,longitude,altitudeAuSol,False)
   print( "alt : "+ str(altitudeAuSol))
-  measured_distance = detection_object.get_distance_image(detection_object.x_imageCenter, detection_object.y_imageCenter, x_centerPixel_target, y_centerPixel_target)
+  measured_distance = detection_object.get_distance_image(x_centerPixel_target, y_centerPixel_target, altitudeAuSol)
   print("distance :" + str(measured_distance))
 
 
