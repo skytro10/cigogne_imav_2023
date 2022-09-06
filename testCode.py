@@ -40,6 +40,16 @@ monDrone.save_mission("mission.txt")
 
 monDrone.printfile("mission.txt")
 
+while True :
+  altitudeAuSol = vehicle.rangefinder.distance
+  longitude = vehicle.location.global_relative_frame.lon
+  latitude = vehicle.location.global_relative_frame.lat
+  
+  detection_object = Detection()
+  x_imageCenter, y_imageCenter, x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = detection_object.Detection_aruco(latitude,longitude,altitudeAuSol,False)
+  print( "alt : "+ str(altitudeAuSol))
+  measured_distance = detection_object.get_distance_image(detection_object.x_imageCenter, detection_object.y_imageCenter, x_centerPixel_target, y_centerPixel_target)
+  print("distance :" + str(measured_distance))
 
 
 
