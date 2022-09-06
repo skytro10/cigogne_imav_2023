@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -52,12 +51,14 @@ research_whiteSquare = True
 
 ###################### Thread creation et appel de fonction ####################
 
-class myThread (threading.Thread):
+class myThread(threading.Thread):
 
   
 
   def __init__(self, threadID, name, altitudeDeVol, vehicle,research_whiteSquare):
     threading.Thread.__init__(self)
+    self._stop_event = threading.Event()
+    
     self.threadID = threadID
     self.name = name
     self.altitudeDeVol = altitudeDeVol
@@ -266,6 +267,11 @@ class myThread (threading.Thread):
 
       print("fin du thread : "+self.name)
 
+  def stop(self):
+    self._stop_event.set()
+
+  def stopped(self):
+    return self._stop_event.is_set()
 
 
 def mission_larguage_GPS_connu(GPS_target_delivery):
@@ -291,6 +297,13 @@ def mission_larguage_GPS_connu(GPS_target_delivery):
   #########attente de la fin de la Detection et du mouvement
   myThread_Detection_target.join()
   myThread_asservissement.join()
+
+  # Ensure to stop a thread if the other is stopped
+  while not myThread_Detection_target.stopped() and not myThread_asservissement.stopped():
+    if myThread_Detection_target.stopped():
+      myThread_asservissement.stop()
+    if myThread_asservissement.stopped():
+      myThread_Detection_target.stop()
   
   #########repart en mode RTL
   Drone.set_mode(vehicle,"RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
