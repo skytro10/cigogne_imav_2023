@@ -47,9 +47,10 @@ while True :
   longitude = vehicle.location.global_relative_frame.lon
   latitude = vehicle.location.global_relative_frame.lat
   
-  x_imageCenter, y_imageCenter, x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude,longitude,altitudeAuSol)
+  detection_object = Detection()
+  x_imageCenter, y_imageCenter, x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = detection_object.Detection_aruco(latitude,longitude,altitudeAuSol,False)
   print( "alt : "+ str(altitudeAuSol))
-  measured_distance = Detection.get_distance_image(x_imageCenter, y_imageCenter, x_centerPixel_target, y_centerPixel_target)
+  measured_distance = detection_object.get_distance_image(x_imageCenter, y_imageCenter, x_centerPixel_target, y_centerPixel_target)
   print("distance :" + str(measured_distance))
 
 

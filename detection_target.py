@@ -38,56 +38,56 @@ class Detection:
   global aruco_dict
   global parameters
   global closeToAruco"""
+  def __init__(self):
+    self.marker_found = False
+    self.whiteSquare_found = False 
+    self.camera = PiCamera()
+    self.camera.brightness = 50
+    self.camera.resolution = (640, 480)
+    #camera.resolution = (1920, 1080)
+    self.camera.framerate = 32
+    self.rawCapture = PiRGBArray(self.camera, size=(640, 480))
   
-  self.marker_found = False
-  self.whiteSquare_found = False 
-  self.camera = PiCamera()
-  self.camera.brightness = 50
-  self.camera.resolution = (640, 480)
-  #camera.resolution = (1920, 1080)
-  self.camera.framerate = 32
-  self.rawCapture = PiRGBArray(camera, size=(640, 480))
+    #--- Define Tag
+    self.id_to_find  = 69
+    self.marker_size  = 5 #- [cm]
+    self.found_count = 0 
+    self.notfound_count = 0
   
-  #--- Define Tag
-  self.id_to_find  = 69
-  self.marker_size  = 5 #- [cm]
-  self.found_count = 0 
-  self.notfound_count = 0
-  
-  #--------------- Resolution ---------------------------
+    #--------------- Resolution ---------------------------
 
-  focal_length = 3.60   # Focal length [mm]
-  horizotal_res = 640   # Horizontal resolution (x dimension) [px] 
-  vertical_res = 480    # Vertical resolution (y dimension) [px]
-  sensor_length = 3.76  # Sensor length (x dimension) [mm]
-  sensor_height = 2.74  # Sensor length (y dimension) [mm]  
-  self.dist_coeff_x = sensor_length/(focal_length*horizotal_res)
-  self.dist_coeff_y = sensor_height/(focal_length*vertical_res)
-  self.x_imageCenter = int(horizotanle_res/2)
-  self.y_imageCenter = int(vertical_res/2)
+    focal_length = 3.60   # Focal length [mm]
+    horizotal_res = 640   # Horizontal resolution (x dimension) [px] 
+    vertical_res = 480    # Vertical resolution (y dimension) [px]
+    sensor_length = 3.76  # Sensor length (x dimension) [mm]
+    sensor_height = 2.74  # Sensor length (y dimension) [mm]  
+    self.dist_coeff_x = sensor_length/(focal_length*horizotal_res)
+    self.dist_coeff_y = sensor_height/(focal_length*vertical_res)
+    self.x_imageCenter = int(horizotal_res/2)
+    self.y_imageCenter = int(vertical_res/2)
   
-  img_compteur = 0
-  dossier = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
-  parent_dir = '/home/housso97/Desktop/code_IMAV2022_Thomas/saved_images'
-  self.path = os.path.join(parent_dir, dossier)
-  os.mkdir(path)
+    self.img_compteur = 0
+    dossier = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
+    parent_dir = '/home/housso97/Desktop/code_IMAV2022_Thomas/saved_images'
+    self.path = os.path.join(parent_dir, dossier)
+    os.mkdir(self.path)
   
-  #--- Camera calibration path
-  calib_path  = "/home/housso97/Desktop/camera_01/cameraa_02/"
-  camera_matrix   = np.loadtxt(calib_path+'cameraMatrix.txt', delimiter=',')
-  camera_distortion   = np.loadtxt(calib_path+'cameraDistortion.txt', delimiter=',')
+    #--- Camera calibration path
+    calib_path  = "/home/housso97/Desktop/camera_01/cameraa_02/"
+    self.camera_matrix   = np.loadtxt(calib_path+'cameraMatrix.txt', delimiter=',')
+    self.camera_distortion   = np.loadtxt(calib_path+'cameraDistortion.txt', delimiter=',')
   
-  #--- Definir le dictionnaire aruco 
-  aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_5X5_1000)
-  parameters  = aruco.DetectorParameters_create()
+    #--- Definir le dictionnaire aruco 
+    self.aruco_dict  = aruco.getPredefinedDictionary(aruco.DICT_5X5_1000)
+    self.parameters  = aruco.DetectorParameters_create()
   
-  closeToAruco = False
+    self.closeToAruco = False
 
-  #--------------- Saved Markers ---------------------------
-  self.saved_markers = {}
+    #--------------- Saved Markers ---------------------------
+    self.saved_markers = {}
 
 
-  def Detection_aruco(latitude, longitude, altitude, research_whiteSquare):
+  def Detection_aruco(self, latitude, longitude, altitude, research_whiteSquare):
     
     #--- Capturer le videocamera 
     self.camera.capture(self.rawCapture, format="bgr")
@@ -184,7 +184,7 @@ class Detection:
   
             x_centerPixel_target = np.mean(c, axis=0)[0][0]
             y_centerPixel_target = np.mean(c, axis=0)[0][1]
-            arrete_marker_pxl = math.sqrt((area)
+            arrete_marker_pxl = math.sqrt(area)
             
             cv2.drawContours(frame, [c], -1, (255, 0, 0), 1)
             cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 0, 255), 2)
@@ -215,6 +215,8 @@ class Detection:
     pass
 
   def get_distance_image(x_image_center, y_image_center, x_target_center, y_target_center, altitude):
+    print(x_image_center)
+    print(x_target_center)
     dist_x = altitude*abs(x_image_center-x_target_center)*self.dist_coeff_x
     dist_y = altitude*abs(y_image_center-y_target_center)*self.dist_coeff_y
     return sqrt(dist_x**2+dist_y**2)
