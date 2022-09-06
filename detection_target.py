@@ -78,6 +78,9 @@ class Detection:
   
   closeToAruco = False
 
+  #--------------- Saved Markers ---------------------------
+  self.saved_markers = {}
+
 
   def Detection_aruco(latitude, longitude, altitude, research_whiteSquare):
     
