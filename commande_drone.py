@@ -116,7 +116,7 @@ class Drone:
   	for x in range(0,duration) :
   		self.vehicle.send_mavlink(msg)
   		time.sleep(0.1)
-     
+
   def get_distance_metres(aLocation1, aLocation2):
     """
     Calculate distance in meters between Latitude/Longitude points.
