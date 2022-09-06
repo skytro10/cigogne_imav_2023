@@ -25,7 +25,7 @@ from picamera import PiCamera,Color
 from picamera.array import PiRGBArray
 
 
-from detection_target import Detection
+#from detection_target import Detection
 from commande_drone import Drone
 
 
@@ -35,10 +35,22 @@ from commande_drone import Drone
 #--------------------- Connection ----------------------------
 
 monDrone = Drone()
+
+
+monDrone.save_mission("mission.txt")
+
+monDrone.printfile("mission.txt")
+
 detection_object = Detection(PiCamera())
 # monDrone.save_mission("mission.txt")
 
+
 # monDrone.printfile("mission.txt")
+
+
+
+
+print("Fin du test")
 
 while True :
   altitudeAuSol = monDrone.vehicle.rangefinder.distance
@@ -54,3 +66,4 @@ while True :
 
 
 print("Fin du test")
+
