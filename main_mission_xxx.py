@@ -92,7 +92,7 @@ class myThread(threading.Thread):
         latitude = drone_object.vehicle.location.global_relative_frame.lat
         
         #le srcipt Detection Target
-        x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude,longitude,altitudeAuSol,research_whiteSquare)
+        x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude,longitude,altitudeAuSol,research_whiteSquare) #### ajouter heading entre alt et research
         
         
         if marker_found == True :
@@ -128,8 +128,7 @@ class myThread(threading.Thread):
         
         
         
-        
-        if drone_object.vehicle.get_mode() != "GUIDED"  or altitudeRelative > 30 : #arret du Thread en cas de changement de mode, de larguage ou d'altitude sup a 25m
+        if (not drone_object.vehicle.get_mode() == "GUIDED" and not drone_object.vehicle.get_mode() == "AUTO")  or altitudeRelative > 30 : #arret du Thread en cas de changement de mode, de larguage ou d'altitude sup a 25m
           
           break
       
@@ -165,7 +164,7 @@ class myThread(threading.Thread):
         
       while True :
         
-        if drone_object.vehicle.get_mode(vehicle) != "GUIDED" or package_dropped == True :
+        if (not drone_object.vehicle.get_mode() == "GUIDED" and not drone_object.vehicle.get_mode() == "AUTO") or package_dropped == True :
           drone_object.vehicle.set_velocity(vehicle,0, 0, 0, 1)
           break
           
@@ -264,7 +263,7 @@ class myThread(threading.Thread):
     return self._stop_event.is_set()
 
 
-def mission_larguage_GPS_connu(GPS_target_delivery):
+def mission_largage_GPS_connu(GPS_target_delivery):
   
   drone_object = Drone()    #permet de connecter le drone via dronekit en creant l objet drone
   detection_object = Detection(PiCamera())  # creer l objet detection
@@ -299,15 +298,47 @@ def mission_larguage_GPS_connu(GPS_target_delivery):
     if myThread_asservissement.stopped():
       myThread_Detection_target.stop()
   
-  #########repart en mode RTL
-  drone_object.set_mode(vehicle,"RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
+  if drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO") :  #securite pour ne pas que le drone reprenne la main en cas d interruption
+    #########repart en mode RTL
+    drone_object.set_mode(vehicle,"RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
 
+def mission_largade_ZONE_inconnu():
 
+  drone_object = Drone()    #permet de connecter le drone via dronekit en creant l objet drone
+  detection_object = Detection(PiCamera())  # creer l objet detection
+  
+  #########verrouillage servomoteur et procedure arm and takeoff
+  drone_object.lancement_decollage(altitudeDeVol)
+  
+  #########passage en mode AUTO et debut de la mission
+  drone_object.passage_mode_Auto()
+  
+  #########Create new threads
+  myThread_Detection_target= myThread(1, "Thread_Detection_target",altitudeDeVol,None,research_whiteSquare)
+  myThread_asservissement= myThread(2, "Thread_asservissement",altitudeDeVol,drone_object,research_whiteSquare)  
+  
+  ####### a faire declenchement detection au WP 2 
+  ####### faire le declenchement asservissement en passant en guided en fonction d un parametre 
+  ####### couper asserv en fonction d une condition et reprise auto
+  ####### definir une fin largage ou echec et stopper code avec RTL
+  
+  
+  #########debut de la Detection 
+  myThread_Detection_target.start()
+  time.sleep(1)
+  myThread_asservissement.start()
+  
+  
+  if drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO") :  #securite pour ne pas que le drone reprenne la main en cas d interruption
+    #########repart en mode RTL
+    drone_object.set_mode(vehicle,"RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
 
 if __name__ == "__main__":
 
   # choix de la mission
-  mission_larguage_GPS_connu(GPS_target_delivery)
+  mission_largage_GPS_connu(GPS_target_delivery)
+  
+  #mission_largade_ZONE_inconnu()
   
   print ("fin du code")
     
