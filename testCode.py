@@ -25,7 +25,7 @@ from picamera import PiCamera,Color
 from picamera.array import PiRGBArray
 
 
-from detection_target import Detection
+#from detection_target import Detection
 from commande_drone import Drone
 
 
@@ -34,39 +34,14 @@ from commande_drone import Drone
 
 #--------------------- Connection ----------------------------
 
-print("Connecting...")
-chemin_drone = '/dev/ttyACM0'
-global vehicle
-vehicle = connect(chemin_drone, wait_ready=True, baud=57600, heartbeat_timeout=2)
+monDrone = Drone()
 
-print("Connection OK")
+monDrone.save_mission("mission.txt")
 
-
-while True :
-  altitudeAuSol = vehicle.rangefinder.distance
-  longitude = vehicle.location.global_relative_frame.lon
-  latitude = vehicle.location.global_relative_frame.lat
-  
-  x_imageCenter, y_imageCenter, x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude,longitude,altitudeAuSol)
-  print( "alt : "+ str(altitudeAuSol))
+monDrone.printfile("mission.txt")
 
 
-"""print( "lat : "+ str(latitude))
-print( "long : "+ str(longitude))
-
-area = 70000*altitude**-2
-
-print ( "area : "+str(area))
 
 
-currentLocation = vehicle.location.global_relative_frame
-print(currentLocation)
-
-locationMaisonStrasbourgThomas = LocationGlobalRelative(48.573451, 7.770484, 10)
-locationMaisonStrasbourgTerrainBasket = LocationGlobalRelative(48.574458, 7.771747, 10)
-
-distanceEnMetre = drone.get_distance_metres(locationMaisonStrasbourgThomas,locationMaisonStrasbourgTerrainBasket)
-
-print("Distance en metre : "+ str(distanceEnMetre))"""
 
 print("Fin du test")

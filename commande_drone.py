@@ -1,6 +1,3 @@
-
-
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -27,69 +24,56 @@ from picamera import PiCamera,Color
 from picamera.array import PiRGBArray
 
 
-class Drone :
+class Drone:
 
-
-  def connectionPixhawk():
+  def __init__(self):
+    self.connectionPixhawk()
+  
+  def connectionPixhawk(self):
     #--------------------- Connection ----------------------------
+    print("Connecting...")
     chemin_drone = '/dev/ttyACM0'
-    global vehicle
-    vehicle = connect(chemin_drone, wait_ready=True, baud=57600, heartbeat_timeout=2)
-    
+    self.vehicle = connect(chemin_drone, wait_ready=True, baud=57600, heartbeat_timeout=2)
     print("Connection OK")
   
-  
-  
-  
-  
-  
-  def arm_and_takeoff(vehicle,aTargetAltitude):
+  def arm_and_takeoff(self, aTargetAltitude):
     """
     Arms vehicle and fly to aTargetAltitude.
     """
-  
     print("Basic pre-arm checks")
     # Don't let the user try to arm until autopilot is ready
-    while not vehicle.is_armable:
-        print(" Waiting for vehicle to initialise...")
-        time.sleep(1)
-  
-        
+    while not self.vehicle.is_armable:
+      print(" Waiting for vehicle to initialise...")
+      time.sleep(1)
     print("Arming motors")
     # Copter should arm in GUIDED mode
-    vehicle.mode = VehicleMode("GUIDED")
-    vehicle.armed = True
+    self.vehicle.mode = VehicleMode("GUIDED")
+    self.vehicle.armed = True
   
-    while not vehicle.armed:      
-        print(" Waiting for arming...")
-        time.sleep(1)
+    while not self.vehicle.armed:
+      print(" Waiting for arming...")
+      time.sleep(1)
   
     print("Taking off!")
-    vehicle.simple_takeoff(aTargetAltitude) # Take off to target altitude
+    self.vehicle.simple_takeoff(aTargetAltitude) # Take off to target altitude
   
     # Wait until the vehicle reaches a safe height before processing the goto (otherwise the command 
     #  after Vehicle.simple_takeoff will execute immediately).
     while True:
-        print(" Altitude: ", vehicle.location.global_relative_frame.alt)      
-        if vehicle.location.global_relative_frame.alt>=aTargetAltitude*0.95: #Trigger just below target alt.
+        print(" Altitude: ", self.vehicle.location.global_relative_frame.alt)      
+        if self.vehicle.location.global_relative_frame.alt>=aTargetAltitude*0.95: #Trigger just below target alt.
             print("Reached target altitude")
             break
         time.sleep(1)
   
-  
-  
-  
-  
-  
-  def move_servo(vehicle,channel, ouvert, duration=1):
-
+  def move_servo(self, channel, ouvert, duration=1):
       if ouvert:
           pwm = 1100
           print("Opening servo")
       else:
           pwm = 1800
           print("Closing servo")
-      msg = vehicle.message_factory.command_long_encode(0, 0,  # target_system, target_component
+      msg = self.vehicle.message_factory.command_long_encode(0, 0,  # target_system, target_component
                                                       mavutil.mavlink.MAV_CMD_DO_SET_SERVO,  # command
                                                       0,  # confirmation
                                                       channel,  # servo number
@@ -98,28 +82,21 @@ class Drone :
       # send command to vehicle
       for x in range(0,duration) :
   		
-          vehicle.send_mavlink(msg)
+          self.vehicle.send_mavlink(msg)
           time.sleep(0.2)
   
-  
-  
   #set_mode - set the mode of the vehicle as long as we are in control
-  def set_mode(vehicle,mode):
-    vehicle.mode = VehicleMode(mode)
+  def set_mode(self, mode):
+    self.vehicle.mode = VehicleMode(mode)
     print("set_mode : "+str(mode))
-    vehicle.flush()
-   
-   
-   
+    self.vehicle.flush()
    
   #get_mode - get current mode of vehicle 
-  def get_mode(vehicle):
-    last_mode = vehicle.mode.name
+  def get_mode(self):
+    last_mode = self.vehicle.mode.name
     return last_mode
 
-
-
-  def set_velocity(vehicle,velocity_x, velocity_y, velocity_z, duration):
+  def set_velocity(self, velocity_x, velocity_y, velocity_z, duration):
   	# only let commands through at 10hz
   	print("vx %s, vy %s, vz %s. \n" % (velocity_x, velocity_y, velocity_z))
   
@@ -127,7 +104,7 @@ class Drone :
   	#last_set_velocity = time.time()
   
   	# create the SET_POSITION_TARGET_LOCAL_NED command
-  	msg = vehicle.message_factory.set_position_target_local_ned_encode(
+  	msg = self.vehicle.message_factory.set_position_target_local_ned_encode(
   		0,  # time_boot_ms (not used)
   		0, 0,  # target system, target component
   		mavutil.mavlink.MAV_FRAME_LOCAL_NED,  # frame
@@ -140,78 +117,166 @@ class Drone :
   
   	# send command to vehicle
   	for x in range(0,duration) :
-  		vehicle.send_mavlink(msg)
+  		self.vehicle.send_mavlink(msg)
   		time.sleep(0.1)
      
-   
-   
-  def get_distance_metres(aLocation1, aLocation2):  ### changer pour code different de lat1 - lat2 ...
+  def get_distance_metres(aLocation1, aLocation2):
     """
-    Returns the ground distance in metres between two LocationGlobal objects.
+    Calculate distance in meters between Latitude/Longitude points.
+    
+    This uses the ‘haversine’ formula to calculate the great-circle
+    distance between two points – that is, the shortest distance over
+    the earth’s surface earth's poles. More informations at:
+    https://www.movable-type.co.uk/scripts/latlong.html
+    """
+    # Haversine formula to compute distance between two GPS points
+    targLat = aLocation1.lat
+    targLon = aLocation1.lon
+    realLat = aLocation2.lat
+    realLon = aLocation2.lon
 
-    This method is an approximation, and will not be accurate over large distances and close to the 
-    earth's poles. It comes from the ArduPilot test code: 
-    https://github.com/diydrones/ardupilot/blob/master/Tools/autotest/common.py
-    """
-    dlat = aLocation2.lat - aLocation1.lat
-    dlong = aLocation2.lon - aLocation1.lon
-    return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+    R = 6371000  # Mean earth radius (meters)
+    phi_1 = radians(targLat)
+    phi_2 = radians(targLat)
+    delta_phi = radians(targLat-realLat)    # Latitude difference (radians)
+    delta_theta = radians(targLon-realLon)  # Longitude difference (radians)
+    a = sin(delta_phi/2)**2 + cos(phi_1) * cos(phi_2) * sin(delta_theta/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1-a))
+    d = R * c
+
+    return d
    
-     
-     
-     
-  def goto(vehicle, targetLocation, vitesse=2.5):    ### modif changer la condition validant Reached target par une condition GPS avec rayon
+  def goto(self, targetLocation, distanceAccuracy):
+    """
+    Function to move to a target location with a given precision.
     
-    
-    ############################################vehicle.airspeed(vitesse)
-    ############################################print("Vitesse de vol : "+str(vitesse))
-    
-    
-    
-    currentLocation = vehicle.location.global_relative_frame
-    targetDistance = Drone.get_distance_metres(currentLocation, targetLocation)
-    
-    vehicle.simple_goto(targetLocation)                          
-    
-    while vehicle.mode.name=="GUIDED": #Stop action if we are no longer in guided mode.
-      #print "DEBUG: mode: %s" % vehicle.mode.name
-      remainingDistance=Drone.get_distance_metres(vehicle.location.global_relative_frame, targetLocation)
+    Based on the simple_goto function from DroneKit completed with a
+    wait function checking if the drone is in a desired accuracy
+    circle around the target location.
+    """
+    # Simple goto DroneKit function
+    self.vehicle.simple_goto(targetLocation)
+
+    # Stop action if we are no longer in GUIDED mode
+    while self.vehicle.mode.name=="GUIDED": 
+      currentLocation = self.vehicle.location.global_relative_frame
+      remainingDistance = self.get_distance_metres(aLocation1, aLocation2)
       print("Distance to target: ", remainingDistance)
-      if remainingDistance<=targetDistance*0.1: #Just below target, in case of undershoot.
-          print("Reached target")
-          break;
+      # print("Distance to the GPS target: %.2fm" % d)
+
+      # If the distance to the target verifies the distance accuracy
+      if remainingDistance <= distanceAccuracy:
+        print("Reached target")
+        break  # Then break the waiting loop
       time.sleep(1)
 
-     
-     
-      
-     
-        
-  def lancement_decollage(vehicle,altitudeDeVol):
-  
+  def lancement_decollage(self, altitudeDeVol):
     #Initialisaion du programme en mode stabilize
-    vehicle.mode = VehicleMode("STABILIZE")
-    
+    self.vehicle.mode = VehicleMode("STABILIZE")
     #verrouillage servomoteur de larguage
-    Drone.move_servo(vehicle,10,False)
-    
-  
+    self.move_servo(10,False)
     while True:
-            print ("en attente de auto")
-            print ("mode: %s" % vehicle.mode)
-            if (vehicle.mode == VehicleMode("AUTO")):
-                    Drone.arm_and_takeoff(vehicle,altitudeDeVol)
-                    break
-            time.sleep(0.25)
-        
-"""
-# test du code
-channel_servo = 10
+      print ("en attente de auto")
+      print ("mode: %s" % self.vehicle.mode)
+      if (self.vehicle.mode == VehicleMode("AUTO")):
+        self.arm_and_takeoff(altitudeDeVol)
+        break
+      time.sleep(0.25)
 
-connectionPixhawk()     
-move_servo(vehicle,channel_servo,False)
-time.sleep(1)
-move_servo(vehicle,channel_servo,True)
-time.sleep(1)
-move_servo(vehicle,channel_servo,False)
-time.sleep(1)"""
+  def readmission(self,aFileName):
+    """
+    Load a mission from a file into a list. The mission definition is in the Waypoint file
+    format (http://qgroundcontrol.org/mavlink/waypoint_protocol#waypoint_file_format).
+
+    This function is used by upload_mission().
+    """
+    print("\nReading mission from file: %s" % aFileName)
+    cmds = self.vehicle.commands
+    missionlist=[]
+    with open(aFileName) as f:
+        for i, line in enumerate(f):
+            if i==0:
+                if not line.startswith('QGC WPL 110'):
+                    raise Exception('File is not supported WP version')
+            else:
+                linearray=line.split('\t')
+                ln_index=int(linearray[0])
+                ln_currentwp=int(linearray[1])
+                ln_frame=int(linearray[2])
+                ln_command=int(linearray[3])
+                ln_param1=float(linearray[4])
+                ln_param2=float(linearray[5])
+                ln_param3=float(linearray[6])
+                ln_param4=float(linearray[7])
+                ln_param5=float(linearray[8])
+                ln_param6=float(linearray[9])
+                ln_param7=float(linearray[10])
+                ln_autocontinue=int(linearray[11].strip())
+                cmd = Command( 0, 0, 0, ln_frame, ln_command, ln_currentwp, ln_autocontinue, ln_param1, ln_param2, ln_param3, ln_param4, ln_param5, ln_param6, ln_param7)
+                missionlist.append(cmd)
+    return missionlist
+    
+  def upload_mission(self, aFileName):
+    """
+    Upload a mission from a file. 
+    """
+    #Read mission from file
+    missionlist = readmission(aFileName)
+    
+    print("\nUpload mission from a file: %s" % aFileName)
+    #Clear existing mission from vehicle
+    print(' Clear mission')
+    cmds = self.vehicle.commands
+    cmds.clear()
+    #Add new mission to vehicle
+    for command in missionlist:
+        cmds.add(command)
+    print(' Upload mission')
+    self.vehicle.commands.upload()
+
+  def download_mission(self):
+    """
+    Downloads the current mission and returns it in a list.
+    It is used in save_mission() to get the file information to save.
+    """
+    print(" Download mission from vehicle")
+    missionlist=[]
+    cmds = self.vehicle.commands
+    cmds.download()
+    cmds.wait_ready()
+    for cmd in cmds:
+        missionlist.append(cmd)
+    return missionlist
+
+  def save_mission(self, aFileName):
+    """
+    Save a mission in the Waypoint file format 
+    (http://qgroundcontrol.org/mavlink/waypoint_protocol#waypoint_file_format).
+    """
+    print("\nSave mission from Vehicle to file: %s" % aFileName)    
+    #Download mission from vehicle
+    missionlist = self.download_mission()
+    #Add file-format information
+    output='QGC WPL 110\n'
+    #Add home location as 0th waypoint
+    home = self.vehicle.home_location
+    print("home.lat : "+str(home.lat))
+    output+="%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (0,1,0,16,0,0,0,0,home.lat,home.lon,home.alt,1)
+    #Add commands
+    for cmd in missionlist:
+        commandline="%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" % (cmd.seq,cmd.current,cmd.frame,cmd.command,cmd.param1,cmd.param2,cmd.param3,cmd.param4,cmd.x,cmd.y,cmd.z,cmd.autocontinue)
+        output+=commandline
+    with open(aFileName, 'w') as file_:
+        print(" Write mission to file")
+        file_.write(output)
+        
+  def printfile(aFileName):
+    """
+    Print a mission file to demonstrate "round trip"
+    """
+    print("\nMission file: %s" % aFileName)
+    with open(aFileName) as f:
+        for line in f:
+            print(' %s' % line.strip()) 
+
+  

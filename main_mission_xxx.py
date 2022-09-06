@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -29,38 +28,31 @@ from commande_drone import Drone
 
 
 
-###################### Dronekit ####################
-
-
-#--------------------- Connection ----------------------------
-
-print("Connecting...")
-chemin_Drone = '/dev/ttyACM0'
-global vehicle
-vehicle = connect(chemin_Drone, wait_ready=True, baud=57600, heartbeat_timeout=2)
-
-print("Connection OK")
-
 #--------------------- Parametres du vehicule ----------------------------
 vitesse = .3 #m/s
 altitudeDeVol = 20
 #exemple de position GPS
   #locationMaisonStrasbourgTerrainBasket = LocationGlobalRelative(48.574458, 7.771747, 10)
 GPS_target_delivery = LocationGlobalRelative(48.7068570, 7.7344260, altitudeDeVol)
+research_whiteSquare = True
+distanceAccuracy = 2 # rayon en metre pour valider un goto
 
 
 ###################### Thread creation et appel de fonction ####################
 
-class myThread (threading.Thread):
+class myThread(threading.Thread):
 
   
 
-  def __init__(self, threadID, name, altitudeDeVol, vehicle):
+  def __init__(self, threadID, name, altitudeDeVol, vehicle,research_whiteSquare):
     threading.Thread.__init__(self)
+    self._stop_event = threading.Event()
+    
     self.threadID = threadID
     self.name = name
     self.altitudeDeVol = altitudeDeVol
     self.vehicle = vehicle
+    self.research_whiteSquare = research_whiteSquare
     
   def run(self):
     print ("Starting " + self.name)
@@ -93,13 +85,13 @@ class myThread (threading.Thread):
       while True :
         
         # actualisation de l altitude et gps
-        altitudeAuSol = vehicle.rangefinder.distance
-        altitudeRelative = vehicle.location.global_relative_frame.alt
-        longitude = vehicle.location.global_relative_frame.lon
-        latitude = vehicle.location.global_relative_frame.lat
+        altitudeAuSol = drone_object.vehicle.rangefinder.distance
+        altitudeRelative = drone_object.vehicle.location.global_relative_frame.alt
+        longitude = drone_object.vehicle.location.global_relative_frame.lon
+        latitude = drone_object.vehicle.location.global_relative_frame.lat
         
         #le srcipt Detection Target
-        x_imageCenter, y_imageCenter, x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude,longitude,altitudeAuSol)
+        x_imageCenter, y_imageCenter, x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude,longitude,altitudeAuSol,research_whiteSquare)
         
         
         if marker_found == True :
@@ -136,7 +128,7 @@ class myThread (threading.Thread):
         
         
         
-        if Drone.get_mode(vehicle) != "GUIDED"  or altitudeRelative > 30 : #arret du Thread en cas de changement de mode, de larguage ou d'altitude sup a 25m
+        if drone_object.vehicle.get_mode() != "GUIDED"  or altitudeRelative > 30 : #arret du Thread en cas de changement de mode, de larguage ou d'altitude sup a 25m
           
           break
       
@@ -172,8 +164,8 @@ class myThread (threading.Thread):
         
       while True :
         
-        if Drone.get_mode(vehicle) != "GUIDED" or package_dropped == True :
-          Drone.set_velocity(vehicle,0, 0, 0, 1)
+        if drone_object.vehicle.get_mode(vehicle) != "GUIDED" or package_dropped == True :
+          drone_object.vehicle.set_velocity(vehicle,0, 0, 0, 1)
           break
           
 
@@ -192,18 +184,18 @@ class myThread (threading.Thread):
           
           if compteur_no_detect > 10 :   #on fixe le nombre d'image consecutive sans Detection pour considerer qu il ne detecte pas
             if altitudeRelative > 30 :  # si on altitudeRelative sup a 30m stop le thread
-              Drone.set_velocity(vehicle,0, 0, 0, 1)
+              drone_object.vehicle.set_velocity(vehicle,0, 0, 0, 1)
               #print ("altitudeRelative > 30")
               break
             else :  # pas de Detection Drone prend de l altitude
               vx = 0
               vy = 0
               vz = -0.5
-              Drone.set_velocity(vehicle,vx, vy, vz, 1)
+              drone_object.vehicle.set_velocity(vehicle,vx, vy, vz, 1)
               #print ("prise d'altitude vz = -0.5")
           
           elif compteur_no_detect > 2 :   # fixer la position du Drone en cas de non Detection
-            Drone.set_velocity(vehicle,0, 0, 0, 1)
+            drone_object.vehicle.set_velocity(vehicle,0, 0, 0, 1)
             #print ("compteur_no_detect > 2   stabilisation drone")
               
                  
@@ -251,47 +243,60 @@ class myThread (threading.Thread):
           last_erry = erry
           
           if dist_center <= 50 :
-            Drone.set_velocity(vehicle,vy, vx, vz, 1) 
+            drone_object.vehicle.set_velocity(vehicle,vy, vx, vz, 1) 
             #print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center <= 30")
           else :
             #lancer un deplacement pour ce rapprocher du centre sans descendre ou monter
             if altitudeAuSol < 2 :
               vz = 0
 
-            Drone.set_velocity(vehicle,vy, vx, vz, 1)  # Pour le sense de la camera, X controle le 'east' et Y controle le 'North'
+            drone_object.vehicle.set_velocity(vehicle,vy, vx, vz, 1)  # Pour le sense de la camera, X controle le 'east' et Y controle le 'North'
             #print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center decale")
         
 
       print("fin du thread : "+self.name)
 
+  def stop(self):
+    self._stop_event.set()
+
+  def stopped(self):
+    return self._stop_event.is_set()
 
 
 def mission_larguage_GPS_connu(GPS_target_delivery):
-
   
+  drone_object = Drone
+  drone_object.connectionPixhawk()
   #########verrouillage servomoteur et procedure arm and takeoff
-  Drone.lancement_decollage(vehicle,altitudeDeVol)
+  drone_object.lancement_decollage(altitudeDeVol)
   #########Drone se deplace sur cible
-  Drone.goto(vehicle, GPS_target_delivery, vitesse)
+  drone_object.goto(GPS_target_delivery, distanceAccuracy)
   
   
   #Drone.move_servo(vehicle,10, False)
   #########Create new threads
-  myThread_Detection_target= myThread(1, "Thread_Detection_target",altitudeDeVol,None)
-  myThread_asservissement= myThread(2, "Thread_asservissement",altitudeDeVol,vehicle)  
+  myThread_Detection_target= myThread(1, "Thread_Detection_target",altitudeDeVol,None,research_whiteSquare)
+  myThread_asservissement= myThread(2, "Thread_asservissement",altitudeDeVol,drone_object,research_whiteSquare)  
 
   #########debut de la Detection et du mouvement
   myThread_Detection_target.start()
   time.sleep(1)
   myThread_asservissement.start()
   
-  
+  """
   #########attente de la fin de la Detection et du mouvement
   myThread_Detection_target.join()
-  myThread_asservissement.join()
+  myThread_asservissement.join()"""
+
+  # Ensure to stop a thread if the other is stopped
+  while not myThread_Detection_target.stopped() and not myThread_asservissement.stopped():
+    if myThread_Detection_target.stopped():
+      myThread_asservissement.stop()
+    if myThread_asservissement.stopped():
+      myThread_Detection_target.stop()
   
   #########repart en mode RTL
-  Drone.set_mode(vehicle,"RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
+  drone_object.set_mode(vehicle,"RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
 
 
 
