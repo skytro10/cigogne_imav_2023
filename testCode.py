@@ -34,12 +34,36 @@ from commande_drone import Drone
 
 #--------------------- Connection ----------------------------
 
+
 monDrone = Drone()
-detection_object = Detection(PiCamera())
-# monDrone.save_mission("mission.txt")
 
-# monDrone.printfile("mission.txt")
+missionList = monDrone.download_mission()
 
+print("nbr WP : "+ str(monDrone.vehicle.commands.count))
+
+monDrone.vehicle.commands.next = 0
+
+print ("Current Waypoint: %s" % monDrone.vehicle.commands.next)
+
+monDrone.vehicle.commands.next = 5
+
+print ("Current Waypoint: %s" % monDrone.vehicle.commands.next)
+
+nextwaypoint = monDrone.vehicle.commands.next
+
+missionitem = monDrone.vehicle.commands[nextwaypoint-1] #commands are zero indexed
+
+lat=missionitem.x
+
+print("lat : "+str(lat))
+
+
+
+print("Fin du test")
+
+
+
+"""
 while True :
   altitudeAuSol = monDrone.vehicle.rangefinder.distance
   longitude = monDrone.vehicle.location.global_relative_frame.lon
@@ -53,4 +77,5 @@ while True :
 
 
 
-print("Fin du test")
+print("Fin du test")"""
+
