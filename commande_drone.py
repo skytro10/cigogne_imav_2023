@@ -293,10 +293,7 @@ class Drone:
     targetWaypointLocation = LocationGlobalRelative(lat,lon,alt)
     distancetopoint = get_distance_metres(self.vehicle.location.global_frame, targetWaypointLocation)
     return distancetopoint
-  
-<<<<<<< HEAD
 
-=======
   def passage_mode_Auto(self):
     """
     Permet d'initialiser le code pour lancer la mission en auto
@@ -308,10 +305,3 @@ class Drone:
     # Set mode to AUTO to start mission
     self.vehicle.mode = VehicleMode("AUTO")
     print("mode AUTO")
-    
-    
->>>>>>> 7acbb608578311aba20919a6810de10a6d82cd82
-
-
-  
-

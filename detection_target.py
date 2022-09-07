@@ -43,7 +43,7 @@ class Detection:
     self.marker_found = False
     self.whiteSquare_found = False 
     self.camera = camera
-    self.camera.brightness = 50
+    #self.camera.brightness = 50
     self.camera.resolution = (640, 480)
     #camera.resolution = (1920, 1080)
     self.camera.framerate = 32
@@ -86,7 +86,7 @@ class Detection:
     self.closeToAruco = False
 
     #--------------- Saved Markers ---------------------------
-    self.saved_markers = {}
+    self.saved_markers = {0: [LocationGlobalRelative(48.58111,7.764722,0)]}
 
 
   def Detection_aruco(self, latitude, longitude, altitude, heading, research_whiteSquare):
@@ -95,6 +95,8 @@ class Detection:
     self.camera.capture(self.rawCapture, format="bgr")
     frame = self.rawCapture.array
     self.rawCapture.truncate(0)
+    
+    #frame = cv2.imread("/home/housso97/Desktop/code_IMAV2022_Thomas/saved_images/2022_09_07-11:18:36_AM/Test_1_Img_9_lat_48.5808915lon_7.7647749alt_6.980000019073486.png")
     
     #definir a quoi ca sert
     font = cv2.FONT_HERSHEY_PLAIN
@@ -160,15 +162,20 @@ class Detection:
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.04 * peri, True)
         area = cv2.contourArea(c)
-        # print ("aire du carre : "+str(area))
-        # print( "alt : "+ str(altitude))
+        
+        """altitude = 20.93      #####################################################################enlever ligne
+        print ("aire du carre : "+str(area))"""
+        print( "alt : "+ str(altitude))
   
         #--------------- Altitude and square filters ------------------
-        if area < 70000*altitude**-2  and area > 15000*altitude**-2 and len(approx) ==4 and altitude > 5 :
+        if altitude==0.0:
+          break
+        if area < 70000*altitude**-2  and area > 10000*altitude**-2 and len(approx) ==4: # and altitude > 0.0:
           # print("Detection area correspondant")
           (x, y, w, h) = cv2.boundingRect(approx)
           ar = w / float(h)
-          if ar >= 0.80 and ar <= 1.20:  # Square filter
+          print("ar : "+str(ar))
+          if ar >= 0.90 and ar <= 1.10:  # Square filter
             # print ("Detection carre blanc OK")
             # cv2.drawContours(frame, [c], -1, (0, 0, 255), 1)
   
@@ -183,28 +190,38 @@ class Detection:
             # Estimating marker location from vision
             distance_vision, angle_vision = self.get_distance_angle_picture(x_centerPixel_target, y_centerPixel_target, altitude)
             current_location = LocationGlobalRelative(latitude, longitude, 0)
-            estimated_location = get_GPS_location(current_location, heading + angle_vision, distance_vision)
+            estimated_location = self.get_GPS_location(current_location, heading + angle_vision, distance_vision)
 
             # White squares found and compared to dictionary
             self.whiteSquare_found = True
-            for ids in saved_markers:
-              saved_location = LocationGlobalRelative(ids[0], ids[1], 0)
-              distance_meters = get_distance_metres(estimated_location, saved_location)
+            new_ids = []
+            new_loc = []
+            for ids in self.saved_markers:
+              saved_location = self.saved_markers[ids][0]
+              distance_meters = self.get_distance_metres(estimated_location, saved_location)
+              # print(distance_meters)
 
               # White square already checked with location fusion
               if distance_meters < 7:
                 self.saved_markers[ids].append(estimated_location)
+                # print("Location already found")
               # Storing new white squares in dictionary
-              elif max(saved_markers.keys()) <= 1000:
-                self.saved_markers[1001] = [estimated_location]
+              elif max(self.saved_markers.keys()) <= 1000:
+                new_ids.append(1001)
+                new_loc.append(estimated_location)
+                # print("New location found")
                 # cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 255, 0), 2)
                 # cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 255, 0), 2)
               else:
-                max_id = max(saved_markers.keys())
-                self.saved_markers[max_id + 1] = [estimated_location]
+                max_id = max(self.saved_markers.keys())
+                new_ids.append(max_id + 1)
+                new_loc.append(estimated_location)
+                # print("New location found")
               # cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 255, 0), 2)
               # cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 255, 0), 2)
-            
+            for ids in new_ids:
+              self.saved_markers[ids] = [new_loc[new_ids.index(ids)]]
+
     if self.marker_found == False and self.whiteSquare_found == False:
       self.notfound_count+=1
       x_centerPixel_target = None
@@ -221,7 +238,7 @@ class Detection:
     
     return x_centerPixel_target, y_centerPixel_target, self.marker_found, self.whiteSquare_found, self.saved_markers
 
-  def get_distance_metres(aLocation1, aLocation2):
+  def get_distance_metres(self, aLocation1, aLocation2):
     """
     Calculate distance in meters between Latitude/Longitude points.
     
@@ -247,7 +264,7 @@ class Detection:
 
     return d
 
-  def get_GPS_location(aLocation, bearing, distance):
+  def get_GPS_location(self, aLocation, bearing, distance):
     """
     Calculate GPS target given distance and bearing from GPS start.
     
@@ -257,8 +274,8 @@ class Detection:
     https://www.movable-type.co.uk/scripts/latlong.html
     """
     # Input variables
-    initLat = latitude
-    initLon = longitude
+    initLat = aLocation.lat
+    initLon = aLocation.lon
     theta = bearing
     d = distance
 
