@@ -96,7 +96,7 @@ class Detection:
     frame = self.rawCapture.array
     self.rawCapture.truncate(0)
     
-    #frame = cv2.imread("/home/housso97/Desktop/code_IMAV2022_Thomas/saved_images/2022_09_07-11:18:36_AM/Test_1_Img_9_lat_48.5808915lon_7.7647749alt_6.980000019073486.png")
+    #frame = cv2.imread("/home/housso97/Desktop/code_IMAV2022_Thomas/saved_images/2022_09_07-12:17:38_PM/mask_closingTest_1_Img_29_lat_48.5809508lon_7.7648142alt_23.8799991607666.png")
     
     #definir a quoi ca sert
     font = cv2.FONT_HERSHEY_PLAIN
@@ -163,9 +163,10 @@ class Detection:
         approx = cv2.approxPolyDP(c, 0.04 * peri, True)
         area = cv2.contourArea(c)
         
-        """altitude = 20.93      #####################################################################enlever ligne
-        print ("aire du carre : "+str(area))"""
-        print( "alt : "+ str(altitude))
+        #print ("aire du carre : "+str(area))
+        #print( "alt : "+ str(altitude))
+        
+
   
         #--------------- Altitude and square filters ------------------
         if altitude==0.0:
@@ -183,44 +184,48 @@ class Detection:
             y_centerPixel_target = np.mean(c, axis=0)[0][1]
             arrete_marker_pxl = math.sqrt(area)
             
-            # cv2.drawContours(frame, [c], -1, (255, 0, 0), 1)
-            cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 0, 255), 2)
-            cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 0, 255), 2)
-
-            # Estimating marker location from vision
-            distance_vision, angle_vision = self.get_distance_angle_picture(x_centerPixel_target, y_centerPixel_target, altitude)
-            current_location = LocationGlobalRelative(latitude, longitude, 0)
-            estimated_location = self.get_GPS_location(current_location, heading + angle_vision, distance_vision)
-
-            # White squares found and compared to dictionary
-            self.whiteSquare_found = True
-            new_ids = []
-            new_loc = []
-            for ids in self.saved_markers:
-              saved_location = self.saved_markers[ids][0]
-              distance_meters = self.get_distance_metres(estimated_location, saved_location)
-              # print(distance_meters)
-
-              # White square already checked with location fusion
-              if distance_meters < 7:
-                self.saved_markers[ids].append(estimated_location)
-                # print("Location already found")
-              # Storing new white squares in dictionary
-              elif max(self.saved_markers.keys()) <= 1000:
-                new_ids.append(1001)
-                new_loc.append(estimated_location)
-                # print("New location found")
+            pixelTest = mask_closing[int(y_centerPixel_target),int(x_centerPixel_target)]
+            #print("pixelTest : "+str(pixelTest))
+            if pixelTest == 255 :  #verifie couleur du carre detecte 255 c est blanc
+            
+              # cv2.drawContours(frame, [c], -1, (255, 0, 0), 1)
+              cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 0, 255), 2)
+              cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 0, 255), 2)
+  
+              # Estimating marker location from vision
+              distance_vision, angle_vision = self.get_distance_angle_picture(x_centerPixel_target, y_centerPixel_target, altitude)
+              current_location = LocationGlobalRelative(latitude, longitude, 0)
+              estimated_location = self.get_GPS_location(current_location, heading + angle_vision, distance_vision)
+  
+              # White squares found and compared to dictionary
+              self.whiteSquare_found = True
+              new_ids = []
+              new_loc = []
+              for ids in self.saved_markers:
+                saved_location = self.saved_markers[ids][0]
+                distance_meters = self.get_distance_metres(estimated_location, saved_location)
+                # print(distance_meters)
+  
+                # White square already checked with location fusion
+                if distance_meters < 7:
+                  self.saved_markers[ids].append(estimated_location)
+                  # print("Location already found")
+                # Storing new white squares in dictionary
+                elif max(self.saved_markers.keys()) <= 1000:
+                  new_ids.append(1001)
+                  new_loc.append(estimated_location)
+                  # print("New location found")
+                  # cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 255, 0), 2)
+                  # cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 255, 0), 2)
+                else:
+                  max_id = max(self.saved_markers.keys())
+                  new_ids.append(max_id + 1)
+                  new_loc.append(estimated_location)
+                  # print("New location found")
                 # cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 255, 0), 2)
                 # cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 255, 0), 2)
-              else:
-                max_id = max(self.saved_markers.keys())
-                new_ids.append(max_id + 1)
-                new_loc.append(estimated_location)
-                # print("New location found")
-              # cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 255, 0), 2)
-              # cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 255, 0), 2)
-            for ids in new_ids:
-              self.saved_markers[ids] = [new_loc[new_ids.index(ids)]]
+              for ids in new_ids:
+                self.saved_markers[ids] = [new_loc[new_ids.index(ids)]]
 
     if self.marker_found == False and self.whiteSquare_found == False:
       self.notfound_count+=1
