@@ -116,7 +116,7 @@ class Drone:
   	for x in range(0,duration) :
   		self.vehicle.send_mavlink(msg)
   		time.sleep(0.1)
-     
+
   def get_distance_metres(aLocation1, aLocation2):
     """
     Calculate distance in meters between Latitude/Longitude points.
@@ -134,7 +134,7 @@ class Drone:
 
     R = 6371000  # Mean earth radius (meters)
     phi_1 = radians(targLat)
-    phi_2 = radians(targLat)
+    phi_2 = radians(realLat)
     delta_phi = radians(targLat-realLat)    # Latitude difference (radians)
     delta_theta = radians(targLon-realLon)  # Longitude difference (radians)
     a = sin(delta_phi/2)**2 + cos(phi_1) * cos(phi_2) * sin(delta_theta/2)**2
@@ -277,8 +277,40 @@ class Drone:
         for line in f:
             print(' %s' % line.strip()) 
 
-  
 
+  def distance_to_current_waypoint(self):
+    """
+    Gets distance in metres to the current waypoint. 
+    It returns None for the first waypoint (Home location).
+    """
+    nextwaypoint = self.vehicle.commands.next
+    if nextwaypoint==0:
+        return None
+    missionitem=self.vehicle.commands[nextwaypoint-1] #commands are zero indexed
+    lat = missionitem.x
+    lon = missionitem.y
+    alt = missionitem.z
+    targetWaypointLocation = LocationGlobalRelative(lat,lon,alt)
+    distancetopoint = get_distance_metres(self.vehicle.location.global_frame, targetWaypointLocation)
+    return distancetopoint
+  
+<<<<<<< HEAD
+
+=======
+  def passage_mode_Auto(self):
+    """
+    Permet d'initialiser le code pour lancer la mission en auto
+    """
+    print("Starting mission")
+    # Reset mission set to first (0) waypoint
+    self.vehicle.commands.next=0
+    
+    # Set mode to AUTO to start mission
+    self.vehicle.mode = VehicleMode("AUTO")
+    print("mode AUTO")
+    
+    
+>>>>>>> 7acbb608578311aba20919a6810de10a6d82cd82
 
 
   

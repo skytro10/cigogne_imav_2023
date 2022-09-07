@@ -37,6 +37,7 @@ from commande_drone import Drone
 
 monDrone = Drone()
 
+
 missionList = monDrone.download_mission()
 
 print("nbr WP : "+ str(monDrone.vehicle.commands.count))
@@ -56,6 +57,12 @@ missionitem = monDrone.vehicle.commands[nextwaypoint-1] #commands are zero index
 lat=missionitem.x
 
 print("lat : "+str(lat))
+
+
+
+
+
+
 
 
 
