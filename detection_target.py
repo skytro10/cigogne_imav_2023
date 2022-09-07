@@ -115,7 +115,7 @@ class Detection:
     corners, ids, rejected = aruco.detectMarkers(image=gray, dictionary=self.aruco_dict, parameters=self.parameters,
                               cameraMatrix=self.camera_matrix, distCoeff=self.camera_distortion)
     
-    print("ids : "+str(ids))
+    # print("ids : "+str(ids))
     self.marker_found = False
     self.whiteSquare_found = False
 
@@ -134,8 +134,8 @@ class Detection:
         cv2.line(frame, (x_centerPixel_target-20, y_centerPixel_target), (x_centerPixel_target+20, y_centerPixel_target), (0, 0, 255), 2)
         #-- Incrementer les compteurs 
         self.found_count+=1
-        print("marquer trouve")
-        print("found_count : "+str(self.found_count))
+        # print("marquer trouve")
+        # print("found_count : "+str(self.found_count))
         
     ################## Detection carree blanc####################      
     elif research_whiteSquare == True :
@@ -160,16 +160,16 @@ class Detection:
         peri = cv2.arcLength(c, True)
         approx = cv2.approxPolyDP(c, 0.04 * peri, True)
         area = cv2.contourArea(c)
-        print ("aire du carre : "+str(area))
-        print( "alt : "+ str(altitude))
+        # print ("aire du carre : "+str(area))
+        # print( "alt : "+ str(altitude))
   
         #--------------- Altitude and square filters ------------------
         if area < 70000*altitude**-2  and area > 15000*altitude**-2 and len(approx) ==4 and altitude > 5 :
-          print("Detection area correspondant")
+          # print("Detection area correspondant")
           (x, y, w, h) = cv2.boundingRect(approx)
           ar = w / float(h)
           if ar >= 0.80 and ar <= 1.20:  # Square filter
-            print ("Detection carre blanc OK")
+            # print ("Detection carre blanc OK")
             # cv2.drawContours(frame, [c], -1, (0, 0, 255), 1)
   
             x_centerPixel_target = np.mean(c, axis=0)[0][0]
@@ -193,29 +193,33 @@ class Detection:
 
               # White square already checked with location fusion
               if distance_meters < 7:
-                pass
+                self.saved_markers[ids].append(estimated_location)
               # Storing new white squares in dictionary
               elif max(saved_markers.keys()) <= 1000:
-                saved_markers[1001] = estimated_location
+                self.saved_markers[1001] = [estimated_location]
+                # cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 255, 0), 2)
+                # cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 255, 0), 2)
               else:
                 max_id = max(saved_markers.keys())
-                saved_markers[max_id + 1] = estimated_location
+                self.saved_markers[max_id + 1] = [estimated_location]
+              # cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 255, 0), 2)
+              # cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 255, 0), 2)
             
     if self.marker_found == False and self.whiteSquare_found == False:
       self.notfound_count+=1
       x_centerPixel_target = None
       y_centerPixel_target = None
-      print ("aruco and white square likely not found")
-      print("notfound_count : "+str(self.notfound_count))  
+      # print ("aruco and white square likely not found")
+      # print("notfound_count : "+str(self.notfound_count))  
         
     cv2.circle(frame, (320, 240), 50, (255,255,255), 1)
     cv2.line(frame, (self.x_imageCenter, self.y_imageCenter-20), (self.x_imageCenter, self.y_imageCenter+20), (255, 0, 0), 2)
     cv2.line(frame, (self.x_imageCenter-20, self.y_imageCenter), (self.x_imageCenter+20, self.y_imageCenter), (255, 0, 0), 2)
       
     cv2.imwrite(os.path.join(self.path, name), frame)
-    print("Image saved !")
+    # print("Image saved !")
     
-    return x_centerPixel_target, y_centerPixel_target, self.marker_found, self.whiteSquare_found
+    return x_centerPixel_target, y_centerPixel_target, self.marker_found, self.whiteSquare_found, self.saved_markers
 
   def get_distance_metres(aLocation1, aLocation2):
     """
