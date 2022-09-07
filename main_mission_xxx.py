@@ -90,13 +90,10 @@ class myThread(threading.Thread):
         altitudeRelative = drone_object.vehicle.location.global_relative_frame.alt
         longitude = drone_object.vehicle.location.global_relative_frame.lon
         latitude = drone_object.vehicle.location.global_relative_frame.lat
+        heading = drone_object.vehicle.attitude.yaw
         
         #le srcipt Detection Target
-<<<<<<< HEAD
-        x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude,longitude,altitudeAuSol,research_whiteSquare)
-=======
-        x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude,longitude,altitudeAuSol,research_whiteSquare) #### ajouter heading entre alt et research
->>>>>>> 7acbb608578311aba20919a6810de10a6d82cd82
+        x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude, longitude, altitudeAuSol, heading, research_whiteSquare)
         
         
         if marker_found == True :

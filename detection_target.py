@@ -105,9 +105,7 @@ class Detection:
     frame = cv2.flip (frame,-1)
     print("Flipped frame: " + str(type(frame)))
     cv2.waitKey(33)"""
-      
-    name = "Test_1_Img_" + str(self.img_compteur)+ "_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude) +".png"
-          
+    
     self.img_compteur+=1
     
     ########################## traitement pour aruco
@@ -130,7 +128,6 @@ class Detection:
         x_centerPixel_target = int(x_sum*.25)
         y_centerPixel_target = int(y_sum*.25)
         arrete_marker_pxl = math.sqrt((corners[0][0][0][0]-corners[0][0][1][0])**2+(corners[0][0][0][1]-corners[0][0][1][1])**2)
-        
         
         cv2.line(frame, (x_centerPixel_target, y_centerPixel_target-20), (x_centerPixel_target, y_centerPixel_target+20), (0, 0, 255), 2)
         cv2.line(frame, (x_centerPixel_target-20, y_centerPixel_target), (x_centerPixel_target+20, y_centerPixel_target), (0, 0, 255), 2)
@@ -179,11 +176,12 @@ class Detection:
           if ar >= 0.90 and ar <= 1.10:  # Square filter
             # print ("Detection carre blanc OK")
             # cv2.drawContours(frame, [c], -1, (0, 0, 255), 1)
-  
+            self.whiteSquare_found = True
             x_centerPixel_target = np.mean(c, axis=0)[0][0]
             y_centerPixel_target = np.mean(c, axis=0)[0][1]
             arrete_marker_pxl = math.sqrt(area)
             
+<<<<<<< HEAD
             pixelTest = mask_closing[int(y_centerPixel_target),int(x_centerPixel_target)]
             #print("pixelTest : "+str(pixelTest))
             if pixelTest == 255 :  #verifie couleur du carre detecte 255 c est blanc
@@ -226,18 +224,61 @@ class Detection:
                 # cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 255, 0), 2)
               for ids in new_ids:
                 self.saved_markers[ids] = [new_loc[new_ids.index(ids)]]
+=======
+            # cv2.drawContours(frame, [c], -1, (255, 0, 0), 1)
+            cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 0, 255), 2)
+            cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 0, 255), 2)
 
+            # Estimating marker location from vision
+            distance_vision, angle_vision = self.get_distance_angle_picture(x_centerPixel_target, y_centerPixel_target, altitude)
+            current_location = LocationGlobalRelative(latitude, longitude, 0)
+            estimated_location = self.get_GPS_location(current_location, heading + angle_vision, distance_vision)
+
+            # White square found and compared to dictionary
+            self.new_location_found = False
+            white_square_id = 0
+            for ids in self.saved_markers:
+              saved_location = self.saved_markers[ids][0]
+              distance_meters = self.get_distance_metres(estimated_location, saved_location)
+              # print(distance_meters)
+
+              # White square already checked with location fusion
+              if distance_meters < 7:
+                white_square_id = ids
+                 # Location already found
+              else:
+                new_location_found = True
+
+            # Storing new white squares in dictionary
+            if new_location_found: 
+              if max(self.saved_markers.keys()) <= 1000:
+                white_square_id = 1001
+                # print("New location found")
+                # cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 255, 0), 2)
+                # cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 255, 0), 2)
+              else:
+                max_id = max(self.saved_markers.keys())
+                white_square_id = max_id + 1
+              # cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 255, 0), 2)
+              # cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 255, 0), 2)
+            self.saved_markers[white_square_id].append(estimated_location)
+            cv2.putText(frame, str(white_square_id), (x_centerPixel_target, y_centerPixel_target), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+>>>>>>> f4164292cea1f4c2c22b8eb41c8ae3088d8bd747
+
+    detect_string = "yes"
     if self.marker_found == False and self.whiteSquare_found == False:
       self.notfound_count+=1
       x_centerPixel_target = None
       y_centerPixel_target = None
+      detect_string = "no"
       # print ("aruco and white square likely not found")
       # print("notfound_count : "+str(self.notfound_count))  
         
     cv2.circle(frame, (320, 240), 50, (255,255,255), 1)
     cv2.line(frame, (self.x_imageCenter, self.y_imageCenter-20), (self.x_imageCenter, self.y_imageCenter+20), (255, 0, 0), 2)
     cv2.line(frame, (self.x_imageCenter-20, self.y_imageCenter), (self.x_imageCenter+20, self.y_imageCenter), (255, 0, 0), 2)
-      
+
+    name = "Test_1_Img_" + str(self.img_compteur) + "_"+ detect_string + "_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude) +".png"
     cv2.imwrite(os.path.join(self.path, name), frame)
     # print("Image saved !")
     
