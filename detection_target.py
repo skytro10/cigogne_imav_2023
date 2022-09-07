@@ -96,7 +96,7 @@ class Detection:
     
     #frame = cv2.imread("/home/housso97/Desktop/code_IMAV2022_Thomas/saved_images/2022_09_07-12:17:38_PM/mask_closingTest_1_Img_29_lat_48.5809508lon_7.7648142alt_23.8799991607666.png")
     
-    #definir a quoi ca sert
+    # police d ecriture sur les images
     font = cv2.FONT_HERSHEY_PLAIN
     
     """print("Captured frame: " + str(type(frame)))  
@@ -138,7 +138,7 @@ class Detection:
     elif research_whiteSquare == True :
       ########################## traitement pour Detection carre blanc
       blur = cv2.GaussianBlur(frame,(5,5),0)       # Gaussian blur filter  
-      hls = cv2.cvtColor(blur, cv2.COLOR_BGR2HLS)  # Convert from BGR to HSV color space  
+      hls = cv2.cvtColor(blur, cv2.COLOR_BGR2HLS)  # Convert from BGR to HLS color space  
       lower_bound = (0,200,0)     # Select white color in HLS space
       upper_bound = (255,255,255)
       mask_hls = cv2.inRange(hls, lower_bound, upper_bound)
@@ -164,7 +164,7 @@ class Detection:
         #--------------- Altitude and square filters ------------------
         if altitude==0.0:
           break
-        if area < 70000*altitude**-2  and area > 10000*altitude**-2 and len(approx) ==4: # and altitude > 0.0:
+        if area < 70000*altitude**-2  and area > 10000*altitude**-2 and len(approx) ==4 and altitude > 5:
           # print("Detection area correspondant")
           (x, y, w, h) = cv2.boundingRect(approx)
           ar = w / float(h)
