@@ -90,14 +90,10 @@ class myThread(threading.Thread):
         altitudeRelative = drone_object.vehicle.location.global_relative_frame.alt
         longitude = drone_object.vehicle.location.global_relative_frame.lon
         latitude = drone_object.vehicle.location.global_relative_frame.lat
+        heading = drone_object.vehicle.attitude.yaw
         
         #le srcipt Detection Target
-<<<<<<< HEAD
-        x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude,longitude,altitudeAuSol,research_whiteSquare)
-=======
-        x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude,longitude,altitudeAuSol,research_whiteSquare) #### ajouter heading entre alt et research
->>>>>>> 7acbb608578311aba20919a6810de10a6d82cd82
-        
+        x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude, longitude, altitudeAuSol, heading, research_whiteSquare)
         
         if marker_found == True :
           compteur_aruco += 1 
@@ -187,7 +183,7 @@ class myThread(threading.Thread):
         if x_centerPixel_target == None or y_centerPixel_target == None :   # echec Detection
           
           if compteur_no_detect > 10 :   #on fixe le nombre d'image consecutive sans Detection pour considerer qu il ne detecte pas
-            if altitudeRelative > 30 :  # si on altitudeRelative sup a 30m stop le thread
+            if altitudeRelative > 25 :  # si on altitudeRelative sup a 25m stop le thread
               drone_object.vehicle.set_velocity(vehicle,0, 0, 0, 1)
               #print ("altitudeRelative > 30")
               break
@@ -272,14 +268,6 @@ def mission_largage_GPS_connu(GPS_target_delivery):
   drone_object = Drone()    #permet de connecter le drone via dronekit en creant l objet drone
   detection_object = Detection(PiCamera())  # creer l objet detection
   
-  
-<<<<<<< HEAD
-  drone_object = Drone()    #permet de connecter le drone via dronekit en creant l objet drone
-  detection_object = Detection(PiCamera())  # creer l objet detection
-  
-  
-=======
->>>>>>> 7acbb608578311aba20919a6810de10a6d82cd82
   #########verrouillage servomoteur et procedure arm and takeoff
   drone_object.lancement_decollage(altitudeDeVol)
   #########Drone se deplace sur cible

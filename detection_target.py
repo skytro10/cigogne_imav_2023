@@ -128,7 +128,7 @@ class Detection:
     elif research_whiteSquare == True :
       #------------- Image processing for white squares -------------
       blur = cv2.GaussianBlur(frame,(5,5),0)       # Gaussian blur filter  
-      hls = cv2.cvtColor(blur, cv2.COLOR_BGR2HLS)  # Convert from BGR to HSV color space  
+      hls = cv2.cvtColor(blur, cv2.COLOR_BGR2HLS)  # Convert from BGR to HLS color space  
       lower_bound = (0,200,0)     # Select white color in HLS space
       upper_bound = (255,255,255)
       mask_hls = cv2.inRange(hls, lower_bound, upper_bound)
