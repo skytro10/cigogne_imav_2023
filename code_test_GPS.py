@@ -9,8 +9,7 @@ while True :
   altitudeAuSol = monDrone.vehicle.rangefinder.distance
   longitude = monDrone.vehicle.location.global_relative_frame.lon
   latitude = monDrone.vehicle.location.global_relative_frame.lat
-  # heading = monDrone.vehicle
-  heading = 207
+  heading = monDrone.vehicle.attitude.yaw
   print(altitudeAuSol)
   
   x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found, saved_markers = detection_object.Detection_aruco(latitude, longitude, altitudeAuSol, heading, True)
