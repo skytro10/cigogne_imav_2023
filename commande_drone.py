@@ -268,7 +268,7 @@ class Drone:
         print(" Write mission to file")
         file_.write(output)
         
-  def printfile(aFileName):
+  def printfile(self, aFileName):
     """
     Print a mission file to demonstrate "round trip"
     """
@@ -277,8 +277,36 @@ class Drone:
         for line in f:
             print(' %s' % line.strip()) 
 
-  
 
+  def distance_to_current_waypoint(self):
+    """
+    Gets distance in metres to the current waypoint. 
+    It returns None for the first waypoint (Home location).
+    """
+    nextwaypoint = self.vehicle.commands.next
+    if nextwaypoint==0:
+        return None
+    missionitem=self.vehicle.commands[nextwaypoint-1] #commands are zero indexed
+    lat = missionitem.x
+    lon = missionitem.y
+    alt = missionitem.z
+    targetWaypointLocation = LocationGlobalRelative(lat,lon,alt)
+    distancetopoint = get_distance_metres(self.vehicle.location.global_frame, targetWaypointLocation)
+    return distancetopoint
+  
+  def passage_mode_Auto(self):
+    """
+    Permet d'initialiser le code pour lancer la mission en auto
+    """
+    print("Starting mission")
+    # Reset mission set to first (0) waypoint
+    self.vehicle.commands.next=0
+    
+    # Set mode to AUTO to start mission
+    self.vehicle.mode = VehicleMode("AUTO")
+    print("mode AUTO")
+    
+    
 
 
   
