@@ -284,18 +284,17 @@ def mission_largage_GPS_connu(GPS_target_delivery):
   time.sleep(1)
   myThread_asservissement.start()
   
-  """
-  #########attente de la fin de la Detection et du mouvement
-  myThread_Detection_target.join()
-  myThread_asservissement.join()"""
-
-  # Ensure to stop a thread if the other is stopped
+  """# Ensure to stop a thread if the other is stopped
   # https://stackoverflow.com/questions/323972/is-there-any-way-to-kill-a-thread
   while not myThread_Detection_target.stopped() and not myThread_asservissement.stopped():
     if myThread_Detection_target.stopped():
       myThread_asservissement.stop()
     if myThread_asservissement.stopped():
-      myThread_Detection_target.stop()
+      myThread_Detection_target.stop()"""
+      
+  #########attente de la fin de la Detection et du mouvement
+  myThread_Detection_target.join()
+  myThread_asservissement.join()
   
   if drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO") :  #securite pour ne pas que le drone reprenne la main en cas d interruption
     #########repart en mode RTL
@@ -321,12 +320,14 @@ def mission_largade_ZONE_inconnu():
   ####### couper asserv en fonction d une condition et reprise auto
   ####### definir une fin largage ou echec et stopper code avec RTL
   
+  # a partir d'un certain waypoint declencher le thread de detection
   
   #########debut de la Detection 
   myThread_Detection_target.start()
   time.sleep(1)
-  myThread_asservissement.start()
   
+  # permet d'attendre la fin du thread
+  myThread_Detection_target.join()
   
   if drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO") :  #securite pour ne pas que le drone reprenne la main en cas d interruption
     #########repart en mode RTL
