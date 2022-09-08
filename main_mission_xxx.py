@@ -290,51 +290,52 @@ def mission_largage_zone_inconnu(id_to_find):
 
   while drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO":
   
-  
-      if goodID_marker_found == True :
-        compteur_aruco += 1 
-        compteur_whiteSquare = 0
-        compteur_no_detect = 0
-        dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(y_imageCenter-y_centerPixel_target)**2)
-        print("dist_center = "+str(dist_center))
+    #--------------- Good ArUco ID found -----------------------
+    if goodID_marker_found == True :
+      compteur_aruco += 1 
+      compteur_whiteSquare = 0
+      compteur_no_detect = 0
+      dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(y_imageCenter-y_centerPixel_target)**2)
+      print("dist_center = "+str(dist_center))
         
-        if not myThread_asservissement.is_alive() : #verifie que le thread d asservissement n est pas deja lance si non lancement du thread asservissement
-          myThread_asservissement.start()
+      if not myThread_asservissement.is_alive() : #verifie que le thread d asservissement n est pas deja lance si non lancement du thread asservissement
+        myThread_asservissement.start()
         
-        if dist_center <= 50 and altitudeAuSol < 1.5 :  # condition pour faire le largage
-          print("Largage !")
-          Drone.move_servo(vehicle,10,True)
-          time.sleep(0.5)
-          package_dropped = True
-          break
-        
+      if dist_center <= 50 and altitudeAuSol < 1.5 :  # condition pour faire le largage
+        print("Largage !")
+        Drone.move_servo(vehicle,10,True)
+        time.sleep(0.5)
+        package_dropped = True
+        break
       
-      elif whiteSquare_found == True :
-        compteur_whiteSquare += 1
-        compteur_aruco = 0
-        compteur_no_detect = 0
-        
-        for id in saved_markers :
-          
-          if saved_markers[id][1] == True :
-          
-            if not myThread_asservissement.is_alive() : #verifie que le thread d asservissement n est pas deja lance si non lancement du thread asservissement
-              myThread_asservissement.start()
+    #--------------- Some white square found -------------------
+    elif whiteSquare_found == True :
+      compteur_whiteSquare += 1
+      compteur_aruco = 0
+      compteur_no_detect = 0
+
+      # Check saved_ids in detection dictionary
+      for saved_id in saved_markers :
+        # Check boolean: if True, needs to be explored
+        if saved_markers[saved_id][1] == True :
+          if not myThread_asservissement.is_alive() : #verifie que le thread d asservissement n est pas deja lance si non lancement du thread asservissement
+            myThread_asservissement.start()
+            id_to_test = saved_id
               
-              id_to_test = id
-              
-      
       else :
         compteur_no_detect =+ 1
         compteur_aruco = 0
         compteur_whiteSquare = 0
         
+    #--------------- No white square, no ArUco -----------------
+    else:
+      drone_object.passage_mode_Auto()
+      # Gestion mission auto, voir avec Thomas
+
       
-      
-          
-      print("compteur_aruco = "+str(compteur_aruco))
-      print("compteur_whiteSquare = "+str(compteur_whiteSquare))
-      print("compteur_no_detect = "+str(compteur_no_detect))
+    print("compteur_aruco = "+str(compteur_aruco))
+    print("compteur_whiteSquare = "+str(compteur_whiteSquare))
+    print("compteur_no_detect = "+str(compteur_no_detect))
   
   
   
