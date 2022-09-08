@@ -39,6 +39,8 @@ distanceAccuracy = 2 # rayon en metre pour valider un goto
 
 global goodID_marker_found
 global whiteSquare_found
+global id_to_test
+id_to_test = -1
 
 ###################### Thread creation et appel de fonction ####################
 
@@ -317,20 +319,21 @@ def mission_largage_zone_inconnu(id_to_find):
       # Check saved_ids in detection dictionary
       for saved_id in saved_markers :
         # Check boolean: if True, needs to be explored
-        if saved_markers[saved_id][1] == True :
+        if saved_markers[saved_id][1] == False :
           if not myThread_asservissement.is_alive() : #verifie que le thread d asservissement n est pas deja lance si non lancement du thread asservissement
             myThread_asservissement.start()
-            id_to_test = saved_id
+          id_to_test = saved_id
+          break
               
-      else :
-        compteur_no_detect =+ 1
-        compteur_aruco = 0
-        compteur_whiteSquare = 0
+    else :
+      compteur_no_detect =+ 1
+      compteur_aruco = 0
+      compteur_whiteSquare = 0
         
-    #--------------- No white square, no ArUco -----------------
-    else:
-      drone_object.passage_mode_Auto()
-      # Gestion mission auto, voir avec Thomas
+      #--------------- No white square, no ArUco -----------------
+      if compteur_no_detect > 10 :
+        drone_object.passage_mode_Auto()
+        # Gestion mission auto, voir avec Thomas
 
       
     print("compteur_aruco = "+str(compteur_aruco))
