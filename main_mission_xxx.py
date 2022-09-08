@@ -33,7 +33,6 @@ vitesse = .3 #m/s
 altitudeDeVol = 20
 #exemple de position GPS
   #locationMaisonStrasbourgTerrainBasket = LocationGlobalRelative(48.574458, 7.771747, 10)
-GPS_target_delivery = LocationGlobalRelative(48.7068570, 7.7344260, altitudeDeVol)
 research_whiteSquare = True
 distanceAccuracy = 2 # rayon en metre pour valider un goto
 
@@ -41,6 +40,8 @@ global goodID_marker_found
 global whiteSquare_found
 global id_to_test
 id_to_test = -1
+global saved_markers
+saved_markers = {-1: (LocationGlobalRelative(48.58111,7.764722,0), True)}
 
 ###################### Thread creation et appel de fonction ####################
 
@@ -97,6 +98,13 @@ class myThread(threading.Thread):
         
         #le srcipt Detection Target
         x_centerPixel_target, y_centerPixel_target, goodID_marker_found, whiteSquare_found, saved_markers = Detection.Detection_aruco(latitude, longitude, altitude, heading, saved_markers, id_to_test, research_whiteSquare)
+        if goodID_marker_found == True :
+          compteur_aruco += 1
+        elif whiteSquare_found == True :
+          compteur_whiteSquare += 1
+        else :
+          compteur_no_detect += 1
+          
         
         
         if (not drone_object.get_mode() == "GUIDED" and not drone_object.get_mode() == "AUTO")  or altitudeRelative > 30 : #arret du Thread en cas de changement de mode, de larguage ou d'altitude sup a 25m
@@ -324,6 +332,10 @@ def mission_largage_zone_inconnu(id_to_find):
   
   # a partir d'un certain waypoint declencher le thread de detection
   
+  while drone_object.vehicle.commands.next <= 2 :
+    pass
+    
+  
   #########debut de la Detection 
   myThread_Detection_target.start()
   time.sleep(1)
@@ -332,8 +344,7 @@ def mission_largage_zone_inconnu(id_to_find):
   
     #--------------- Good ArUco ID found -----------------------
     if goodID_marker_found == True :
-      compteur_aruco += 1 
-      compteur_whiteSquare = 0
+      #compteur_whiteSquare = 0
       compteur_no_detect = 0
       print("[mission] Good aruco tag detected !")
       
@@ -341,6 +352,8 @@ def mission_largage_zone_inconnu(id_to_find):
       print("[mission] Current distance: %.2fpx ; Altitude: %.2fm." % (dist_center, altitudeAuSol))
         
       if not myThread_asservissement.is_alive() : #verifie que le thread d asservissement n est pas deja lance si non lancement du thread asservissement
+        drone_object.set_mode("GUIDED")
+        time.sleep(O.3)
         myThread_asservissement.start()
         
       if dist_center <= 50 and altitudeAuSol < 1.5 :  # condition pour faire le largage
@@ -352,7 +365,6 @@ def mission_largage_zone_inconnu(id_to_find):
       
     #--------------- Some white square found -------------------
     elif whiteSquare_found == True :
-      compteur_whiteSquare += 1
       compteur_aruco = 0
       compteur_no_detect = 0
       print("[mission] Detection of 1 or many white squares (%i times)" % compteur_whiteSquare)
@@ -363,22 +375,24 @@ def mission_largage_zone_inconnu(id_to_find):
         if saved_markers[saved_id][1] == False:
                 print("[mission] Detection of 1 or many white squares (%i times)" % compteur_whiteSquare)
           if not myThread_asservissement.is_alive() : #verifie que le thread d asservissement n est pas deja lance si non lancement du thread asservissement
+            drone_object.set_mode("GUIDED")
+            time.sleep(O.3)
             myThread_asservissement.start()
           id_to_test = saved_id
           break
               
     else :
-      compteur_no_detect += 1
       compteur_aruco = 0
-      compteur_whiteSquare = 0
+      #compteur_whiteSquare = 0
       print("[mission] No detection or wrong tag (%i times)" % compteur_no_detect)
         
       #--------------- No white square, no ArUco -----------------
-      if compteur_no_detect > 10 :
+      if compteur_no_detect > 10 and compteur_whiteSquare =! 0 :
         print("[mission] 10 times without tag detection, not interesting place.")
         saved_markers[id_to_test][1] = True  # Saved markers explored, not interesting
         id_to_test = -1
         drone_object.passage_mode_Auto()
+        compteur_whiteSquare = 0
         # Gestion mission auto, voir avec Thomas
 
       
@@ -443,6 +457,7 @@ def mission_largage_GPS_silent(GPS_target_delivery, id_to_find):
 
 if __name__ == "__main__":
   id_to_find = 69  # List of ids:
+  GPS_target_delivery = LocationGlobalRelative(48.7068570, 7.7344260, altitudeDeVol)
   
   # Mission 1: Delivery at known location
   mission_largage_GPS_connu(GPS_target_delivery, id_to_find)

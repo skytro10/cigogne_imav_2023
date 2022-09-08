@@ -123,7 +123,8 @@ class Detection:
       # If the white square of interest is located at the ArUco place
       if distance_meters < 7:
         saved_markers[ids[0]] = saved_markers[id_to_test]  # Put white square infos inside ArUco ids
-        saved_markers.pop(id_to_test)                      # Remove current white square id
+        saved_markers[ids[0]][1] = True  # Saved Aruco markers explored, not interesting
+        #saved_markers.pop(id_to_test)                      # Remove current white square id
 
       if ids[0] == self.id_to_find:
         self.marker_found = True
@@ -179,7 +180,7 @@ class Detection:
             pixelTest = mask_closing[int(y_centerPixel_target),int(x_centerPixel_target)]
             #print("pixelTest : "+str(pixelTest))
             if pixelTest == 255 :  #verifie couleur du carre detecte 255 c est blanc
-              self.whiteSquare_found = True
+              
               # cv2.drawContours(frame, [c], -1, (255, 0, 0), 1)
               cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 0, 255), 2)
               cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 0, 255), 2)
@@ -205,12 +206,14 @@ class Detection:
                   if white_square_id == id_to_test:
                     x_pixel_target_out = x_centerPixel_target
                     y_pixel_target_out = y_centerPixel_target
+                   
                   # Location already found
                 else:
                   new_location_found = True
 
               # Storing new white squares in dictionary
               if new_location_found:
+                self.whiteSquare_found = True
                 if max(saved_markers.keys()) <= 1000:
                   white_square_id = 1001
                   # print("New location found")
@@ -223,6 +226,10 @@ class Detection:
                   # cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 255, 0), 2)
                 saved_markers[white_square_id] = (estimated_location, False)
               cv2.putText(frame, str(white_square_id), (x_centerPixel_target, y_centerPixel_target), font, 1, (0, 255, 0), 2, cv2.LINE_AA)
+    
+    for id_markers in saved_markers :
+      if saved_markers[id_markers][1] == False:
+        self.whiteSquare_found = True
 
     detect_string = "yes"
     if self.marker_found == False and self.whiteSquare_found == False:
