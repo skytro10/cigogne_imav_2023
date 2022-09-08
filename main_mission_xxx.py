@@ -37,7 +37,8 @@ GPS_target_delivery = LocationGlobalRelative(48.7068570, 7.7344260, altitudeDeVo
 research_whiteSquare = True
 distanceAccuracy = 2 # rayon en metre pour valider un goto
 
-
+global marker_found
+global whiteSquare_found
 
 ###################### Thread creation et appel de fonction ####################
 
@@ -81,6 +82,7 @@ class myThread(threading.Thread):
     global longitude
     global latitude
     
+    
     if self.name == "Thread_Detection_target":   
       
       while True :
@@ -95,45 +97,10 @@ class myThread(threading.Thread):
         #le srcipt Detection Target
         x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude, longitude, altitudeAuSol, heading, research_whiteSquare)
         
-        if marker_found == True :
-          compteur_aruco += 1 
-          compteur_whiteSquare = 0
-          compteur_no_detect = 0
-          dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(y_imageCenter-y_centerPixel_target)**2)
-          print("dist_center = "+str(dist_center))
-          
-          if dist_center <= 50 and altitudeAuSol < 1.5 :  # condition pour faire le larguage
-            print("Larguage !")
-            Drone.move_servo(vehicle,10,True)
-            time.sleep(0.5)
-            package_dropped = True
-            
-            break
-          
-        
-        elif whiteSquare_found == True :
-          compteur_whiteSquare += 1
-          compteur_aruco = 0
-          compteur_no_detect = 0
-        
-        else :
-          compteur_no_detect =+ 1
-          compteur_aruco = 0
-          compteur_whiteSquare = 0
-            
-        print("compteur_aruco = "+str(compteur_aruco))
-        print("compteur_whiteSquare = "+str(compteur_whiteSquare))
-        print("compteur_no_detect = "+str(compteur_no_detect))
-        
-        
-        
         
         if (not drone_object.vehicle.get_mode() == "GUIDED" and not drone_object.vehicle.get_mode() == "AUTO")  or altitudeRelative > 30 : #arret du Thread en cas de changement de mode, de larguage ou d'altitude sup a 25m
           
           break
-      
-      
-      
       
       print("fin du thread : "+self.name)
 
@@ -315,29 +282,65 @@ def mission_largage_zone_inconnu(id_to_find):
   myThread_Detection_target= myThread(1, "Thread_Detection_target",altitudeDeVol,None,research_whiteSquare)
   myThread_asservissement= myThread(2, "Thread_asservissement",altitudeDeVol,drone_object,research_whiteSquare)  
   
-  ####### a faire declenchement detection au WP 2 
-  ####### faire le declenchement asservissement en passant en guided en fonction d un parametre 
-  ####### couper asserv en fonction d une condition et reprise auto
-  ####### definir une fin largage ou echec et stopper code avec RTL
-
-  while drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO":
-    saved_markers
-    if marker_found:
-      # largage
-      break
-  
   # a partir d'un certain waypoint declencher le thread de detection
   
   #########debut de la Detection 
   myThread_Detection_target.start()
   time.sleep(1)
+
+  while drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO":
+  
+  
+      if marker_found == True :
+        compteur_aruco += 1 
+        compteur_whiteSquare = 0
+        compteur_no_detect = 0
+        dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(y_imageCenter-y_centerPixel_target)**2)
+        print("dist_center = "+str(dist_center))
+        
+        if dist_center <= 50 and altitudeAuSol < 1.5 :  # condition pour faire le largage
+          print("Largage !")
+          Drone.move_servo(vehicle,10,True)
+          time.sleep(0.5)
+          package_dropped = True
+          
+          break
+        
+      
+      elif whiteSquare_found == True :
+        compteur_whiteSquare += 1
+        compteur_aruco = 0
+        compteur_no_detect = 0
+        
+        if not myThread_asservissement.is_alive() : #verifie que le thread d asservissement n est pas deja lance si non lancement du thread asservissement
+          myThread_asservissement.start()
+      
+      else :
+        compteur_no_detect =+ 1
+        compteur_aruco = 0
+        compteur_whiteSquare = 0
+          
+      print("compteur_aruco = "+str(compteur_aruco))
+      print("compteur_whiteSquare = "+str(compteur_whiteSquare))
+      print("compteur_no_detect = "+str(compteur_no_detect))
+  
+  
+  
+  ####### a faire declenchement detection au WP 2 
+  ####### faire le declenchement asservissement en passant en guided en fonction d un parametre 
+  ####### couper asserv en fonction d une condition et reprise auto
+  ####### definir une fin largage ou echec et stopper code avec RTL
+
+
+  
+
   
   # permet d'attendre la fin du thread
   myThread_Detection_target.join()
   
   # if  drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO"):  #securite pour ne pas que le drone reprenne la main en cas d interruption
     #########repart en mode RTL
-    drone_object.set_mode(vehicle,"RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
+  drone_object.set_mode(vehicle,"RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
 
 if __name__ == "__main__":
 
@@ -350,7 +353,7 @@ if __name__ == "__main__":
   # mission_largage_GPS_incertain(GPS_target_delivery)
 
   # Mission 3: Delivery at unknown location 
-  # mission_largage_zone_inconnu()
+  # mission_largage_zone_inconnu(id_to_find)
 
   # Mission 4: Silent Delivery
   # mission_largage_GPS_connu_silent(GPS_target_delivery)
