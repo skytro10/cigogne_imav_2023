@@ -17,6 +17,7 @@ from array import array
 from datetime import datetime
 from picamera import PiCamera,Color
 from picamera.array import PiRGBArray
+from utilities import get_distance_metres, get_GPS_location, get_distance_angle_picture
 
 class Detection:
   def __init__(self, camera):
@@ -111,12 +112,14 @@ class Detection:
       cv2.line(frame, (x_centerPixel_target-20, y_centerPixel_target), (x_centerPixel_target+20, y_centerPixel_target), (0, 0, 255), 2)
 
       # Estimating marker location from vision
-      distance_vision, angle_vision = self.get_distance_angle_picture(x_centerPixel_target, y_centerPixel_target, altitude)
+      distance_vision, angle_vision = get_distance_angle_picture(self.x_imageCenter, self.y_imageCenter,
+                                                                 x_centerPixel_target, y_centerPixel_target,
+                                                                 altitude, self.dist_coeff_x, self.dist_coeff_y)
       current_location = LocationGlobalRelative(latitude, longitude, 0)
-      estimated_location = self.get_GPS_location(current_location, heading + angle_vision, distance_vision)
+      estimated_location = get_GPS_location(current_location, heading + angle_vision, distance_vision)
 
       saved_location = saved_markers[id_markers][0]
-      distance_meters = self.get_distance_metres(estimated_location, saved_location)
+      distance_meters = get_distance_metres(estimated_location, saved_location)
       
       #-- Incrementer les compteurs 
       self.found_count+=1
@@ -175,16 +178,18 @@ class Detection:
               cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 0, 255), 2)
 
               # Estimating marker location from vision
-              distance_vision, angle_vision = self.get_distance_angle_picture(x_centerPixel_target, y_centerPixel_target, altitude)
+              distance_vision, angle_vision = get_distance_angle_picture(self.x_imageCenter, self.y_imageCenter,
+                                                                 x_centerPixel_target, y_centerPixel_target,
+                                                                 altitude, self.dist_coeff_x, self.dist_coeff_y)
               current_location = LocationGlobalRelative(latitude, longitude, 0)
-              estimated_location = self.get_GPS_location(current_location, heading + angle_vision, distance_vision)
+              estimated_location = get_GPS_location(current_location, heading + angle_vision, distance_vision)
 
               # White square found and compared to dictionary
               self.new_location_found = False
               white_square_id = 0
               for id_markers in saved_markers:
                 saved_location = saved_markers[id_markers][0]
-                distance_meters = self.get_distance_metres(estimated_location, saved_location)
+                distance_meters = get_distance_metres(estimated_location, saved_location)
                 # print(distance_meters)
 
                 # White square already checked with location fusion
@@ -227,68 +232,3 @@ class Detection:
     # print("Image saved !")
     
     return x_centerPixel_target, y_centerPixel_target, self.marker_found, self.whiteSquare_found, saved_markers
-
-  def get_distance_metres(self, aLocation1, aLocation2):
-    """
-    Calculate distance in meters between Latitude/Longitude points.
-    
-    This uses the ‘haversine’ formula to calculate the great-circle
-    distance between two points – that is, the shortest distance over
-    the earth’s surface earth's poles. More informations at:
-    https://www.movable-type.co.uk/scripts/latlong.html
-    """
-    # Haversine formula to compute distance between two GPS points
-    targLat = aLocation1.lat
-    targLon = aLocation1.lon
-    realLat = aLocation2.lat
-    realLon = aLocation2.lon
-
-    R = 6371000  # Mean earth radius (meters)
-    phi_1 = radians(targLat)
-    phi_2 = radians(realLat)
-    delta_phi = radians(targLat-realLat)    # Latitude difference (radians)
-    delta_theta = radians(targLon-realLon)  # Longitude difference (radians)
-    a = sin(delta_phi/2)**2 + cos(phi_1) * cos(phi_2) * sin(delta_theta/2)**2
-    c = 2 * atan2(sqrt(a), sqrt(1-a))
-    d = R * c
-
-    return d
-
-  def get_GPS_location(self, aLocation, bearing, distance):
-    """
-    Calculate GPS target given distance and bearing from GPS start.
-    
-    Given a start point, initial bearing, and distance, this will
-    calculate the destination point and travelling along a (shortest
-    distance) great circle arc. More informations at:
-    https://www.movable-type.co.uk/scripts/latlong.html
-    """
-    # Input variables
-    initLat = aLocation.lat
-    initLon = aLocation.lon
-    theta = bearing
-    d = distance
-
-    # Inverse of Haversine
-    R = 6371000  # Mean earth radius (meters)
-    phi_1 = radians(initLat)
-    lambda_1 = radians(initLon)
-    phi_2 = asin(sin(phi_1) * cos(d/R) + cos(phi_1) * sin(d/R) * cos(theta))
-    lambda_2 = lambda_1 + atan2(sin(theta) * sin(d/R) * cos(phi_1), cos(d/R) - sin(phi_1) * sin(phi_2))
-    return LocationGlobalRelative(degrees(phi_2), degrees(lambda_2), 0)
-
-  def get_distance_angle_picture(self, x_target_center, y_target_center, altitude):
-    """
-    Calculate distance between two objects in a picture.
-    
-    Distances on x and y axes are dependant from sensor sizes and
-    resolutions (which implies two different coefficients for each
-    axis). More informations at:
-    https://photo.stackexchange.com/questions/102795/calculate-the-distance-of-an-object-in-a-picture
-    """
-    if x_target_center == None:
-      return None
-    else:
-      dist_x = altitude*(x_target_center - self.x_imageCenter)*self.dist_coeff_x
-      dist_y = altitude*(y_target_center - self.y_imageCenter)*self.dist_coeff_y
-      return sqrt(dist_x**2+dist_y**2), atan2(dist_y, dist_x)
