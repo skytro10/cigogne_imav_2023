@@ -103,6 +103,8 @@ class Detection:
       y_sum = corners[0][0][0][1]+ corners[0][0][1][1]+ corners[0][0][2][1]+ corners[0][0][3][1]
       x_centerPixel_target = int(x_sum*.25)
       y_centerPixel_target = int(y_sum*.25)
+      x_pixel_target_out = x_centerPixel_target
+      y_pixel_target_out = y_centerPixel_target
       arrete_marker_pxl = sqrt((corners[0][0][0][0]-corners[0][0][1][0])**2+(corners[0][0][0][1]-corners[0][0][1][1])**2)
         
       cv2.line(frame, (x_centerPixel_target, y_centerPixel_target-20), (x_centerPixel_target, y_centerPixel_target+20), (0, 0, 255), 2)
@@ -200,6 +202,9 @@ class Detection:
                 # White square already checked with location fusion
                 if distance_meters < 7:
                   white_square_id = id_markers
+                  if white_square_id == id_to_test:
+                    x_pixel_target_out = x_centerPixel_target
+                    y_pixel_target_out = y_centerPixel_target
                   # Location already found
                 else:
                   new_location_found = True
@@ -222,8 +227,8 @@ class Detection:
     detect_string = "yes"
     if self.marker_found == False and self.whiteSquare_found == False:
       self.notfound_count+=1
-      x_centerPixel_target = None
-      y_centerPixel_target = None
+      x_pixel_target_out = None
+      y_pixel_target_out = None
       detect_string = "no"
       # print ("aruco and white square likely not found")
       # print("notfound_count : "+str(self.notfound_count))  
@@ -236,4 +241,4 @@ class Detection:
     cv2.imwrite(os.path.join(self.path, name), frame)
     # print("Image saved !")
     
-    return x_centerPixel_target, y_centerPixel_target, self.marker_found, self.whiteSquare_found, saved_markers
+    return x_pixel_target_out, y_pixel_target_out, self.marker_found, self.whiteSquare_found, saved_markers
