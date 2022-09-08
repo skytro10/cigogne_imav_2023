@@ -22,7 +22,7 @@ from array import array
 from datetime import datetime
 from picamera import PiCamera,Color
 from picamera.array import PiRGBArray
-
+from utilities import get_distance_metres
 
 class Drone:
 
@@ -116,32 +116,6 @@ class Drone:
   	for x in range(0,duration) :
   		self.vehicle.send_mavlink(msg)
   		time.sleep(0.1)
-
-  def get_distance_metres(aLocation1, aLocation2):
-    """
-    Calculate distance in meters between Latitude/Longitude points.
-    
-    This uses the ‘haversine’ formula to calculate the great-circle
-    distance between two points – that is, the shortest distance over
-    the earth’s surface earth's poles. More informations at:
-    https://www.movable-type.co.uk/scripts/latlong.html
-    """
-    # Haversine formula to compute distance between two GPS points
-    targLat = aLocation1.lat
-    targLon = aLocation1.lon
-    realLat = aLocation2.lat
-    realLon = aLocation2.lon
-
-    R = 6371000  # Mean earth radius (meters)
-    phi_1 = radians(targLat)
-    phi_2 = radians(realLat)
-    delta_phi = radians(targLat-realLat)    # Latitude difference (radians)
-    delta_theta = radians(targLon-realLon)  # Longitude difference (radians)
-    a = sin(delta_phi/2)**2 + cos(phi_1) * cos(phi_2) * sin(delta_theta/2)**2
-    c = 2 * atan2(sqrt(a), sqrt(1-a))
-    d = R * c
-
-    return d
    
   def goto(self, targetLocation, distanceAccuracy):
     """
@@ -157,7 +131,7 @@ class Drone:
     # Stop action if we are no longer in GUIDED mode
     while self.vehicle.mode.name=="GUIDED": 
       currentLocation = self.vehicle.location.global_relative_frame
-      remainingDistance = self.get_distance_metres(aLocation1, aLocation2)
+      remainingDistance = get_distance_metres(currentLocation, targetLocation)
       print("Distance to target: ", remainingDistance)
       # print("Distance to the GPS target: %.2fm" % d)
 
