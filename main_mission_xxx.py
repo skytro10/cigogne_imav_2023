@@ -301,7 +301,7 @@ def mission_largage_GPS_connu(GPS_target_delivery):
     drone_object.set_mode(vehicle,"RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
 
 def mission_largage_zone_inconnu(id_to_find):
-
+  #--------------- Drone and Detection objects declarations ---------------------------
   drone_object = Drone()    #permet de connecter le drone via dronekit en creant l objet drone
   detection_object = Detection(PiCamera(), id_to_find)  # creer l objet detection
   
@@ -319,6 +319,12 @@ def mission_largage_zone_inconnu(id_to_find):
   ####### faire le declenchement asservissement en passant en guided en fonction d un parametre 
   ####### couper asserv en fonction d une condition et reprise auto
   ####### definir une fin largage ou echec et stopper code avec RTL
+
+  while drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO":
+    saved_markers
+    if marker_found:
+      # largage
+      break
   
   # a partir d'un certain waypoint declencher le thread de detection
   
@@ -329,16 +335,28 @@ def mission_largage_zone_inconnu(id_to_find):
   # permet d'attendre la fin du thread
   myThread_Detection_target.join()
   
-  if drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO") :  #securite pour ne pas que le drone reprenne la main en cas d interruption
+  # if  drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO"):  #securite pour ne pas que le drone reprenne la main en cas d interruption
     #########repart en mode RTL
     drone_object.set_mode(vehicle,"RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
 
 if __name__ == "__main__":
 
   # choix de la mission
+
+  # Mission 1: Delivery at known location
   mission_largage_GPS_connu(GPS_target_delivery)
-  
-  #mission_largage_zone_inconnu()
+
+  # Mission 2: Delivery at uncertain location 
+  # mission_largage_GPS_incertain(GPS_target_delivery)
+
+  # Mission 3: Delivery at unknown location 
+  # mission_largage_zone_inconnu()
+
+  # Mission 4: Silent Delivery
+  # mission_largage_GPS_connu_silent(GPS_target_delivery)
+
+  # Mission 5: Delivery on a moving pickup truck
+  # Mission 6: Delivery far and fast
   
   print ("fin du code")
     
