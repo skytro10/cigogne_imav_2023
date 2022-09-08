@@ -37,7 +37,7 @@ GPS_target_delivery = LocationGlobalRelative(48.7068570, 7.7344260, altitudeDeVo
 research_whiteSquare = True
 distanceAccuracy = 2 # rayon en metre pour valider un goto
 
-global marker_found
+global goodID_marker_found
 global whiteSquare_found
 
 ###################### Thread creation et appel de fonction ####################
@@ -95,7 +95,7 @@ class myThread(threading.Thread):
         heading = drone_object.vehicle.attitude.yaw
         
         #le srcipt Detection Target
-        x_centerPixel_target, y_centerPixel_target, marker_found, whiteSquare_found = Detection.Detection_aruco(latitude, longitude, altitudeAuSol, heading, research_whiteSquare)
+        x_centerPixel_target, y_centerPixel_target, goodID_marker_found, whiteSquare_found, saved_markers = Detection.Detection_aruco(latitude, longitude, altitude, heading, saved_markers, id_to_test, research_whiteSquare)
         
         
         if (not drone_object.vehicle.get_mode() == "GUIDED" and not drone_object.vehicle.get_mode() == "AUTO")  or altitudeRelative > 30 : #arret du Thread en cas de changement de mode, de larguage ou d'altitude sup a 25m
@@ -291,19 +291,21 @@ def mission_largage_zone_inconnu(id_to_find):
   while drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO":
   
   
-      if marker_found == True :
+      if goodID_marker_found == True :
         compteur_aruco += 1 
         compteur_whiteSquare = 0
         compteur_no_detect = 0
         dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(y_imageCenter-y_centerPixel_target)**2)
         print("dist_center = "+str(dist_center))
         
+        if not myThread_asservissement.is_alive() : #verifie que le thread d asservissement n est pas deja lance si non lancement du thread asservissement
+          myThread_asservissement.start()
+        
         if dist_center <= 50 and altitudeAuSol < 1.5 :  # condition pour faire le largage
           print("Largage !")
           Drone.move_servo(vehicle,10,True)
           time.sleep(0.5)
           package_dropped = True
-          
           break
         
       
@@ -312,13 +314,23 @@ def mission_largage_zone_inconnu(id_to_find):
         compteur_aruco = 0
         compteur_no_detect = 0
         
-        if not myThread_asservissement.is_alive() : #verifie que le thread d asservissement n est pas deja lance si non lancement du thread asservissement
-          myThread_asservissement.start()
+        for id in saved_markers :
+          
+          if saved_markers[id][1] == True :
+          
+            if not myThread_asservissement.is_alive() : #verifie que le thread d asservissement n est pas deja lance si non lancement du thread asservissement
+              myThread_asservissement.start()
+              
+              id_to_test = id
+              
       
       else :
         compteur_no_detect =+ 1
         compteur_aruco = 0
         compteur_whiteSquare = 0
+        
+      
+      
           
       print("compteur_aruco = "+str(compteur_aruco))
       print("compteur_whiteSquare = "+str(compteur_whiteSquare))
