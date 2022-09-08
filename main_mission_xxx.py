@@ -300,10 +300,10 @@ def mission_largage_GPS_connu(GPS_target_delivery):
     #########repart en mode RTL
     drone_object.set_mode(vehicle,"RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
 
-def mission_largade_ZONE_inconnu():
+def mission_largage_zone_inconnu(id_to_find):
 
   drone_object = Drone()    #permet de connecter le drone via dronekit en creant l objet drone
-  detection_object = Detection(PiCamera())  # creer l objet detection
+  detection_object = Detection(PiCamera(), id_to_find)  # creer l objet detection
   
   #########verrouillage servomoteur et procedure arm and takeoff
   drone_object.lancement_decollage(altitudeDeVol)
@@ -338,7 +338,7 @@ if __name__ == "__main__":
   # choix de la mission
   mission_largage_GPS_connu(GPS_target_delivery)
   
-  #mission_largade_ZONE_inconnu()
+  #mission_largage_zone_inconnu()
   
   print ("fin du code")
     

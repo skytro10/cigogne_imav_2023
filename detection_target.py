@@ -9,8 +9,7 @@ import numpy as np
 import cv2
 import cv2.aruco as aruco
 import sys, time
-import math
-from math import asin, atan2, cos, degrees, radians, sin, sqrt, pi
+from math import sqrt
 from dronekit import connect, VehicleMode, LocationGlobalRelative, LocationGlobal
 from pymavlink import mavutil 
 from array import array
@@ -20,7 +19,7 @@ from picamera.array import PiRGBArray
 from utilities import get_distance_metres, get_GPS_location, get_distance_angle_picture
 
 class Detection:
-  def __init__(self, camera):
+  def __init__(self, camera, id_to_find):
     self.marker_found = False
     self.whiteSquare_found = False 
     self.camera = camera
@@ -31,7 +30,7 @@ class Detection:
     self.rawCapture = PiRGBArray(self.camera, size=(640, 480))
   
     #--- Define Tag
-    self.id_to_find = 69
+    self.id_to_find = id_to_find
     self.marker_size = 5 #- [cm]
     self.found_count = 0 
     self.notfound_count = 0
@@ -99,14 +98,12 @@ class Detection:
     self.whiteSquare_found = False
 
     #--------------- Detection ArUco Tags ---------------------------
-    if ids is not None : # and ids[0] == Detection.id_to_find:  
-      self.marker_found = True
-        
+    if ids is not None : # and ids[0] == Detection.id_to_find:
       x_sum = corners[0][0][0][0]+ corners[0][0][1][0]+ corners[0][0][2][0]+ corners[0][0][3][0]
       y_sum = corners[0][0][0][1]+ corners[0][0][1][1]+ corners[0][0][2][1]+ corners[0][0][3][1]
       x_centerPixel_target = int(x_sum*.25)
       y_centerPixel_target = int(y_sum*.25)
-      arrete_marker_pxl = math.sqrt((corners[0][0][0][0]-corners[0][0][1][0])**2+(corners[0][0][0][1]-corners[0][0][1][1])**2)
+      arrete_marker_pxl = sqrt((corners[0][0][0][0]-corners[0][0][1][0])**2+(corners[0][0][0][1]-corners[0][0][1][1])**2)
         
       cv2.line(frame, (x_centerPixel_target, y_centerPixel_target-20), (x_centerPixel_target, y_centerPixel_target+20), (0, 0, 255), 2)
       cv2.line(frame, (x_centerPixel_target-20, y_centerPixel_target), (x_centerPixel_target+20, y_centerPixel_target), (0, 0, 255), 2)
@@ -118,8 +115,16 @@ class Detection:
       current_location = LocationGlobalRelative(latitude, longitude, 0)
       estimated_location = get_GPS_location(current_location, heading + angle_vision, distance_vision)
 
-      saved_location = saved_markers[id_markers][0]
+      saved_location = saved_markers[id_to_test][0]
       distance_meters = get_distance_metres(estimated_location, saved_location)
+
+      # If the white square of interest is located at the ArUco place
+      if distance_meters < 7:
+        saved_markers[ids[0]] = saved_markers[id_to_test]  # Put white square infos inside ArUco ids
+        saved_markers.pop(id_to_test)                      # Remove current white square id
+
+      if ids[0] == self.id_to_find:
+        self.marker_found = True
       
       #-- Incrementer les compteurs 
       self.found_count+=1
@@ -167,7 +172,7 @@ class Detection:
             # cv2.drawContours(frame, [c], -1, (0, 0, 255), 1)
             x_centerPixel_target = np.mean(c, axis=0)[0][0]
             y_centerPixel_target = np.mean(c, axis=0)[0][1]
-            arrete_marker_pxl = math.sqrt(area)
+            arrete_marker_pxl = sqrt(area)
             
             pixelTest = mask_closing[int(y_centerPixel_target),int(x_centerPixel_target)]
             #print("pixelTest : "+str(pixelTest))
