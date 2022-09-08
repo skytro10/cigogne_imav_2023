@@ -48,14 +48,14 @@ class myThread(threading.Thread):
 
   
 
-  def __init__(self, threadID, name, altitudeDeVol, vehicle,research_whiteSquare):
+  def __init__(self, threadID, name, altitudeDeVol, drone_object, research_whiteSquare):
     threading.Thread.__init__(self)
     self._stop_event = threading.Event()
     
     self.threadID = threadID
     self.name = name
     self.altitudeDeVol = altitudeDeVol
-    self.vehicle = vehicle
+    self.drone_object = drone_object
     self.research_whiteSquare = research_whiteSquare
     
   def run(self):
@@ -84,9 +84,8 @@ class myThread(threading.Thread):
     global longitude
     global latitude
     
-    
-    if self.name == "Thread_Detection_target":   
-      
+    if self.name == "Thread_Detection_target":
+      print("[visiont] HELLO WORLD! Vision thread launched!")
       while True :
         
         # actualisation de l altitude et gps
@@ -100,17 +99,14 @@ class myThread(threading.Thread):
         x_centerPixel_target, y_centerPixel_target, goodID_marker_found, whiteSquare_found, saved_markers = Detection.Detection_aruco(latitude, longitude, altitude, heading, saved_markers, id_to_test, research_whiteSquare)
         
         
-        if (not drone_object.vehicle.get_mode() == "GUIDED" and not drone_object.vehicle.get_mode() == "AUTO")  or altitudeRelative > 30 : #arret du Thread en cas de changement de mode, de larguage ou d'altitude sup a 25m
+        if (not drone_object.get_mode() == "GUIDED" and not drone_object.get_mode() == "AUTO")  or altitudeRelative > 30 : #arret du Thread en cas de changement de mode, de larguage ou d'altitude sup a 25m
           
           break
       
-      print("fin du thread : "+self.name)
+      print("[visiont] Fin du thread. BYE BYE!")
 
-    
-    
-    
     if self.name == "Thread_asservissement":
-      
+      print("[asservt] HI GUYS! Asserv thread launched!")
       dErrx = 0
       dErry = 0
       errsumx = 0
@@ -133,8 +129,8 @@ class myThread(threading.Thread):
         
       while True :
         
-        if (not drone_object.vehicle.get_mode() == "GUIDED" and not drone_object.vehicle.get_mode() == "AUTO") or package_dropped == True :
-          drone_object.vehicle.set_velocity(vehicle,0, 0, 0, 1)
+        if (not drone_object.get_mode() == "GUIDED" and not drone_object.get_mode() == "AUTO") or package_dropped == True :
+          drone_object.set_velocity(0, 0, 0, 1)
           break
           
 
@@ -153,18 +149,18 @@ class myThread(threading.Thread):
           
           if compteur_no_detect > 10 :   #on fixe le nombre d'image consecutive sans Detection pour considerer qu il ne detecte pas
             if altitudeRelative > 25 :  # si on altitudeRelative sup a 25m stop le thread
-              drone_object.vehicle.set_velocity(vehicle,0, 0, 0, 1)
+              drone_object.set_velocity(0, 0, 0, 1)
               #print ("altitudeRelative > 30")
               break
             else :  # pas de Detection Drone prend de l altitude
               vx = 0
               vy = 0
               vz = -0.5
-              drone_object.vehicle.set_velocity(vehicle,vx, vy, vz, 1)
+              drone_object.set_velocity(vx, vy, vz, 1)
               #print ("prise d'altitude vz = -0.5")
           
           elif compteur_no_detect > 2 :   # fixer la position du Drone en cas de non Detection
-            drone_object.vehicle.set_velocity(vehicle,0, 0, 0, 1)
+            drone_object.set_velocity(0, 0, 0, 1)
             #print ("compteur_no_detect > 2   stabilisation drone")
               
                  
@@ -212,18 +208,17 @@ class myThread(threading.Thread):
           last_erry = erry
           
           if dist_center <= 50 :
-            drone_object.vehicle.set_velocity(vehicle,vy, vx, vz, 1) 
+            drone_object.set_velocity(vy, vx, vz, 1) 
             #print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center <= 30")
           else :
             #lancer un deplacement pour ce rapprocher du centre sans descendre ou monter
             if altitudeAuSol < 2 :
               vz = 0
 
-            drone_object.vehicle.set_velocity(vehicle,vy, vx, vz, 1)  # Pour le sense de la camera, X controle le 'east' et Y controle le 'North'
+            drone_object.set_velocity(vy, vx, vz, 1)  # Pour le sense de la camera, X controle le 'east' et Y controle le 'North'
             #print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center decale")
         
-
-      print("fin du thread : "+self.name)
+      print("[asservt] Fin du thread. SEE YOU SOON!")
 
   def stop(self):
     self._stop_event.set()
@@ -231,12 +226,11 @@ class myThread(threading.Thread):
   def stopped(self):
     return self._stop_event.is_set()
 
-
-def mission_largage_GPS_connu(GPS_target_delivery):
-  
+#--------------------------------------------------------------
+def mission_largage_GPS_connu(GPS_target_delivery, id_to_find):
+  print("[mission] Mission1 started: Delivery at known location.")
   drone_object = Drone()    #permet de connecter le drone via dronekit en creant l objet drone
-  detection_object = Detection(PiCamera())  # creer l objet detection
-  
+  detection_object = Detection(PiCamera(), id_to_find)  # creer l objet detection
   #########verrouillage servomoteur et procedure arm and takeoff
   drone_object.lancement_decollage(altitudeDeVol)
   #########Drone se deplace sur cible
@@ -265,16 +259,60 @@ def mission_largage_GPS_connu(GPS_target_delivery):
   myThread_Detection_target.join()
   myThread_asservissement.join()
   
-  if drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO") :  #securite pour ne pas que le drone reprenne la main en cas d interruption
+  if drone_object.get_mode() == "GUIDED" or drone_object.get_mode() == "AUTO") :  #securite pour ne pas que le drone reprenne la main en cas d interruption
     #########repart en mode RTL
-    drone_object.set_mode(vehicle,"RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
+    drone_object.set_mode("RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
+#--------------------------------------------------------------
 
-def mission_largage_zone_inconnu(id_to_find):
-  #--------------- Drone and Detection objects declarations ---------------------------
+#--------------------------------------------------------------
+"""
+def mission_largage_GPS_incertain(GPS_target_delivery, id_to_find):
+
   drone_object = Drone()    #permet de connecter le drone via dronekit en creant l objet drone
   detection_object = Detection(PiCamera(), id_to_find)  # creer l objet detection
   
   #########verrouillage servomoteur et procedure arm and takeoff
+  drone_object.lancement_decollage(altitudeDeVol)
+  #########Drone se deplace sur cible
+  drone_object.goto(GPS_target_delivery, distanceAccuracy)
+  
+  
+  #Drone.move_servo(vehicle,10, False)
+  #########Create new threads
+  myThread_Detection_target= myThread(1, "Thread_Detection_target",altitudeDeVol,None,research_whiteSquare)
+  myThread_asservissement= myThread(2, "Thread_asservissement",altitudeDeVol,drone_object,research_whiteSquare)  
+
+  #########debut de la Detection et du mouvement
+  myThread_Detection_target.start()
+  time.sleep(1)
+  myThread_asservissement.start()
+  
+  # Ensure to stop a thread if the other is stopped
+  # https://stackoverflow.com/questions/323972/is-there-any-way-to-kill-a-thread
+  while not myThread_Detection_target.stopped() and not myThread_asservissement.stopped():
+    if myThread_Detection_target.stopped():
+      myThread_asservissement.stop()
+    if myThread_asservissement.stopped():
+      myThread_Detection_target.stop()
+      
+  #########attente de la fin de la Detection et du mouvement
+  myThread_Detection_target.join()
+  myThread_asservissement.join()
+  
+  if drone_object.get_mode() == "GUIDED" or drone_object.get_mode() == "AUTO") :  #securite pour ne pas que le drone reprenne la main en cas d interruption
+    #########repart en mode RTL
+    drone_object.set_mode("RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
+"""
+#--------------------------------------------------------------
+
+#--------------------------------------------------------------
+def mission_largage_zone_inconnu(id_to_find):
+  print("[mission] Mission3 started: Delivery at unknown location.")
+  drone_object = Drone()    #permet de connecter le drone via dronekit en creant l objet drone
+  detection_object = Detection(PiCamera(), id_to_find)  # creer l objet detection
+  
+  #########verrouillage servomoteur et procedure arm and takeoff
+  print("[mission] Mission3 started: Delivery at unknown location.")
   drone_object.lancement_decollage(altitudeDeVol)
   
   #########passage en mode AUTO et debut de la mission
@@ -290,22 +328,24 @@ def mission_largage_zone_inconnu(id_to_find):
   myThread_Detection_target.start()
   time.sleep(1)
 
-  while drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO":
+  while drone_object.get_mode() == "GUIDED" or drone_object.get_mode() == "AUTO":
   
     #--------------- Good ArUco ID found -----------------------
     if goodID_marker_found == True :
       compteur_aruco += 1 
       compteur_whiteSquare = 0
       compteur_no_detect = 0
+      print("[mission] Good aruco tag detected !")
+      
       dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(y_imageCenter-y_centerPixel_target)**2)
-      print("dist_center = "+str(dist_center))
+      print("[mission] Current distance: %.2fpx ; Altitude: %.2fm." % (dist_center, altitudeAuSol))
         
       if not myThread_asservissement.is_alive() : #verifie que le thread d asservissement n est pas deja lance si non lancement du thread asservissement
         myThread_asservissement.start()
         
       if dist_center <= 50 and altitudeAuSol < 1.5 :  # condition pour faire le largage
-        print("Largage !")
-        Drone.move_servo(vehicle,10,True)
+        print("[mission] Largage !")
+        drone_object.move_servo(10, True)
         time.sleep(0.5)
         package_dropped = True
         break
@@ -315,30 +355,36 @@ def mission_largage_zone_inconnu(id_to_find):
       compteur_whiteSquare += 1
       compteur_aruco = 0
       compteur_no_detect = 0
+      print("[mission] Detection of 1 or many white squares (%i times)" % compteur_whiteSquare)
 
       # Check saved_ids in detection dictionary
       for saved_id in saved_markers :
         # Check boolean: if True, needs to be explored
-        if saved_markers[saved_id][1] == False :
+        if saved_markers[saved_id][1] == False:
+                print("[mission] Detection of 1 or many white squares (%i times)" % compteur_whiteSquare)
           if not myThread_asservissement.is_alive() : #verifie que le thread d asservissement n est pas deja lance si non lancement du thread asservissement
             myThread_asservissement.start()
           id_to_test = saved_id
           break
               
     else :
-      compteur_no_detect =+ 1
+      compteur_no_detect += 1
       compteur_aruco = 0
       compteur_whiteSquare = 0
+      print("[mission] No detection or wrong tag (%i times)" % compteur_no_detect)
         
       #--------------- No white square, no ArUco -----------------
       if compteur_no_detect > 10 :
+        print("[mission] 10 times without tag detection, not interesting place.")
+        saved_markers[id_to_test][1] = True  # Saved markers explored, not interesting
+        id_to_test = -1
         drone_object.passage_mode_Auto()
         # Gestion mission auto, voir avec Thomas
 
       
-    print("compteur_aruco = "+str(compteur_aruco))
-    print("compteur_whiteSquare = "+str(compteur_whiteSquare))
-    print("compteur_no_detect = "+str(compteur_no_detect))
+    # print("compteur_aruco = "+str(compteur_aruco))
+    # print("compteur_whiteSquare = "+str(compteur_whiteSquare))
+    # print("compteur_no_detect = "+str(compteur_no_detect))
   
   
   
@@ -346,38 +392,71 @@ def mission_largage_zone_inconnu(id_to_find):
   ####### faire le declenchement asservissement en passant en guided en fonction d un parametre 
   ####### couper asserv en fonction d une condition et reprise auto
   ####### definir une fin largage ou echec et stopper code avec RTL
-
-
-  
-
   
   # permet d'attendre la fin du thread
   myThread_Detection_target.join()
   
   # if  drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO"):  #securite pour ne pas que le drone reprenne la main en cas d interruption
     #########repart en mode RTL
-  drone_object.set_mode(vehicle,"RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
+  drone_object.set_mode("RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
+#--------------------------------------------------------------
+
+#--------------------------------------------------------------
+"""
+def mission_largage_GPS_silent(GPS_target_delivery, id_to_find):
+
+  drone_object = Drone()    #permet de connecter le drone via dronekit en creant l objet drone
+  detection_object = Detection(PiCamera(), id_to_find)  # creer l objet detection
+  #########verrouillage servomoteur et procedure arm and takeoff
+  drone_object.lancement_decollage(altitudeDeVol)
+  #########Drone se deplace sur cible
+  drone_object.goto(GPS_target_delivery, distanceAccuracy)
+  
+  
+  #Drone.move_servo(vehicle,10, False)
+  #########Create new threads
+  myThread_Detection_target= myThread(1, "Thread_Detection_target",altitudeDeVol,None,research_whiteSquare)
+  myThread_asservissement= myThread(2, "Thread_asservissement",altitudeDeVol,drone_object,research_whiteSquare)  
+
+  #########debut de la Detection et du mouvement
+  myThread_Detection_target.start()
+  time.sleep(1)
+  myThread_asservissement.start()
+  
+  """# Ensure to stop a thread if the other is stopped
+  # https://stackoverflow.com/questions/323972/is-there-any-way-to-kill-a-thread
+  while not myThread_Detection_target.stopped() and not myThread_asservissement.stopped():
+    if myThread_Detection_target.stopped():
+      myThread_asservissement.stop()
+    if myThread_asservissement.stopped():
+      myThread_Detection_target.stop()"""
+      
+  #########attente de la fin de la Detection et du mouvement
+  myThread_Detection_target.join()
+  myThread_asservissement.join()
+  
+  if drone_object.get_mode() == "GUIDED" or drone_object.get_mode() == "AUTO") :  #securite pour ne pas que le drone reprenne la main en cas d interruption
+    #########repart en mode RTL
+    drone_object.set_mode("RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
+"""
+#--------------------------------------------------------------
 
 if __name__ == "__main__":
-
-  # choix de la mission
-
+  id_to_find = 69  # List of ids:
+  
   # Mission 1: Delivery at known location
-  mission_largage_GPS_connu(GPS_target_delivery)
+  mission_largage_GPS_connu(GPS_target_delivery, id_to_find)
 
   # Mission 2: Delivery at uncertain location 
-  # mission_largage_GPS_incertain(GPS_target_delivery)
+  # mission_largage_GPS_incertain(GPS_target_delivery, id_to_find)
 
   # Mission 3: Delivery at unknown location 
   # mission_largage_zone_inconnu(id_to_find)
 
   # Mission 4: Silent Delivery
-  # mission_largage_GPS_connu_silent(GPS_target_delivery)
+  # mission_largage_GPS_silent(GPS_target_delivery, id_to_find)
 
   # Mission 5: Delivery on a moving pickup truck
   # Mission 6: Delivery far and fast
   
   print ("fin du code")
-    
-    
- 

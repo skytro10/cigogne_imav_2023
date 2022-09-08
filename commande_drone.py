@@ -85,7 +85,7 @@ class Drone:
   #set_mode - set the mode of the vehicle as long as we are in control
   def set_mode(self, mode):
     self.vehicle.mode = VehicleMode(mode)
-    print("set_mode : "+str(mode))
+    print("[mission] Mode set to %s." % mode)
     self.vehicle.flush()
    
   #get_mode - get current mode of vehicle 
@@ -94,28 +94,28 @@ class Drone:
     return last_mode
 
   def set_velocity(self, velocity_x, velocity_y, velocity_z, duration):
-  	# only let commands through at 10hz
-  	print("vx %s, vy %s, vz %s. \n" % (velocity_x, velocity_y, velocity_z))
+    # only let commands through at 10hz
+    print("[mission] Velocity set to values: vx: %.2f ; vy: %.2f ; vz %.2f." % (velocity_x, velocity_y, velocity_z))
   
-  	#global last_set_velocity
-  	#last_set_velocity = time.time()
+    #global last_set_velocity
+    #last_set_velocity = time.time()
   
-  	# create the SET_POSITION_TARGET_LOCAL_NED command
-  	msg = self.vehicle.message_factory.set_position_target_local_ned_encode(
-  		0,  # time_boot_ms (not used)
-  		0, 0,  # target system, target component
-  		mavutil.mavlink.MAV_FRAME_LOCAL_NED,  # frame
-  		0x0DC7,  # type_mask (ignore pos | ignore acc)
-  		0, 0, 0,  # x, y, z positions (not used)
-  		velocity_x, velocity_y, velocity_z,
-  		# x, y, z velocity in m/s -- X positive forward or North/ Y positive right or East / Z positive down
-  		0, 0, 0,  # x, y, z acceleration (not used)
-  		0, 0)  # yaw, yaw_rate (not used)
-  
-  	# send command to vehicle
-  	for x in range(0,duration) :
-  		self.vehicle.send_mavlink(msg)
-  		time.sleep(0.1)
+    # create the SET_POSITION_TARGET_LOCAL_NED command
+    msg = self.vehicle.message_factory.set_position_target_local_ned_encode(
+      0,  # time_boot_ms (not used)
+      0, 0,  # target system, target component
+      mavutil.mavlink.MAV_FRAME_LOCAL_NED,  # frame
+      0x0DC7,  # type_mask (ignore pos | ignore acc)
+      0, 0, 0,  # x, y, z positions (not used)
+      velocity_x, velocity_y, velocity_z,
+      # x, y, z velocity in m/s -- X positive forward or North/ Y positive right or East / Z positive down
+      0, 0, 0,  # x, y, z acceleration (not used)
+      0, 0)  # yaw, yaw_rate (not used)
+    
+    # send command to vehicle
+    for x in range(0,duration) :
+      self.vehicle.send_mavlink(msg)
+      time.sleep(0.1)
    
   def goto(self, targetLocation, distanceAccuracy):
     """
@@ -132,12 +132,12 @@ class Drone:
     while self.vehicle.mode.name=="GUIDED": 
       currentLocation = self.vehicle.location.global_relative_frame
       remainingDistance = get_distance_metres(currentLocation, targetLocation)
-      print("Distance to target: ", remainingDistance)
+      print ("[mission] Distance to the GPS target: ", remainingDistance)
       # print("Distance to the GPS target: %.2fm" % d)
 
       # If the distance to the target verifies the distance accuracy
       if remainingDistance <= distanceAccuracy:
-        print("Reached target")
+        print("[mission] Reached GPS target!")
         break  # Then break the waiting loop
       time.sleep(1)
 
@@ -145,15 +145,13 @@ class Drone:
     #Initialisaion du programme en mode stabilize
     self.vehicle.mode = VehicleMode("STABILIZE")
     #verrouillage servomoteur de larguage
-    self.move_servo(10,False)
+    self.move_servo(10, False)
     while True:
-      print ("en attente de auto")
-      print ("mode: %s" % self.vehicle.mode)
+      print ("[mission] Current mode: %s. Waiting for AUTO mode." % self.vehicle.mode)
       if (self.vehicle.mode == VehicleMode("AUTO")):
         self.arm_and_takeoff(altitudeDeVol)
         break
       time.sleep(0.25)
-
 
   def readmission(self,aFileName):
     """
@@ -272,10 +270,10 @@ class Drone:
     """
     Permet d'initialiser le code pour lancer la mission en auto
     """
-    print("Starting mission")
+    print("[mission] Starting mission AUTO.")
     # Reset mission set to first (0) waypoint
     self.vehicle.commands.next=0
     
     # Set mode to AUTO to start mission
     self.vehicle.mode = VehicleMode("AUTO")
-    print("mode AUTO")
+    # print("mode AUTO")

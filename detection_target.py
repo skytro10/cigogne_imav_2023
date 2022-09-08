@@ -69,7 +69,7 @@ class Detection:
     # self.saved_markers = {-1: (LocationGlobalRelative(48.58111,7.764722,0), False)}
 
   def Detection_aruco(self, latitude, longitude, altitude, heading, saved_markers, id_to_test, research_whiteSquare):
-    
+    print("[visiont] New image. ID to test: %s. Number of saved items: %s." % (id_to_test, len(saved_markers)))
     #--- Capturer le videocamera 
     self.camera.capture(self.rawCapture, format="bgr")
     frame = self.rawCapture.array
@@ -117,7 +117,7 @@ class Detection:
       current_location = LocationGlobalRelative(latitude, longitude, 0)
       estimated_location = get_GPS_location(current_location, heading + angle_vision, distance_vision)
 
-      saved_location = saved_markers[id_to_test][0]
+      saved_location = saved_markers[id_to_test][0]  # Compare to id_to_test saved location
       distance_meters = get_distance_metres(estimated_location, saved_location)
 
       # If the white square of interest is located at the ArUco place
