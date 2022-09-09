@@ -68,7 +68,7 @@ class Drone:
           pwm = 1100
           print("Opening servo")
       else:
-          pwm = 1800
+          pwm = 1900
           print("Closing servo")
       msg = self.vehicle.message_factory.command_long_encode(0, 0,  # target_system, target_component
                                                       mavutil.mavlink.MAV_CMD_DO_SET_SERVO,  # command

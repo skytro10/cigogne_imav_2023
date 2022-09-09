@@ -65,11 +65,21 @@ global altitudeAuSol
 global altitudeRelative
 global longitude
 global latitude
+global altitudeAuSol
+
 
 ###################### Thread creation et appel de fonction ####################
 
 class myThread(threading.Thread):
-
+  global compteur_no_detect
+  global compteur_whiteSquare
+  global compteur_aruco
+  global goodID_marker_found
+  global whiteSquare_found
+  global x_centerPixel_target
+  global y_centerPixel_target
+  global altitudeAuSol
+  global id_to_test
   
 
   def __init__(self, threadID, name, altitudeDeVol, drone_object, research_whiteSquare,saved_markers,detection_object):
@@ -87,13 +97,16 @@ class myThread(threading.Thread):
     print ("Starting " + self.name)
     
     global compteur_no_detect
-    compteur_no_detect = 0
     global compteur_whiteSquare
-    compteur_whiteSquare = 0
     global compteur_aruco
-    compteur_aruco = 0
     global goodID_marker_found
     global whiteSquare_found
+    global x_centerPixel_target
+    global y_centerPixel_target
+    global altitudeAuSol
+    global id_to_test
+  
+
 
     
     if self.name == "Thread_Detection_target":
@@ -247,6 +260,15 @@ class myThread(threading.Thread):
 
 #--------------------------------------------------------------
 def mission_largage_GPS_connu(GPS_target_delivery, id_to_find):
+  global compteur_no_detect
+  global compteur_whiteSquare
+  global compteur_aruco
+  global goodID_marker_found
+  global whiteSquare_found
+  global x_centerPixel_target
+  global y_centerPixel_target
+  global altitudeAuSol
+  
   print("[mission] Mission1 started: Delivery at known location.")
   drone_object = Drone()    #permet de connecter le drone via dronekit en creant l objet drone
   detection_object = Detection(PiCamera(), id_to_find)  # creer l objet detection
@@ -326,6 +348,18 @@ def mission_largage_GPS_incertain(GPS_target_delivery, id_to_find):
 
 #--------------------------------------------------------------
 def mission_largage_zone_inconnu(id_to_find):
+
+  global compteur_no_detect
+  global compteur_whiteSquare
+  global compteur_aruco
+  global goodID_marker_found
+  global whiteSquare_found
+  global x_centerPixel_target
+  global y_centerPixel_target
+  global altitudeAuSol
+  global id_to_test
+  
+
   print("[mission] Mission3 started: Delivery at unknown location.")
   drone_object = Drone()    #permet de connecter le drone via dronekit en creant l objet drone
   detection_object = Detection(PiCamera(), id_to_find)  # creer l objet detection
@@ -348,18 +382,21 @@ def mission_largage_zone_inconnu(id_to_find):
     
   
   #########debut de la Detection 
-  #myThread_Detection_target.start()
-  #time.sleep(3)
+  myThread_Detection_target.start()
+  time.sleep(3)
 
   while drone_object.get_mode() == "GUIDED" or drone_object.get_mode() == "AUTO":
   
     #--------------- Good ArUco ID found -----------------------
     if goodID_marker_found == True :
       #compteur_whiteSquare = 0
-      compteur_no_detect = 0
+      compteur_no_detect = 0      
       print("[mission] Good aruco tag detected !")
       
-      dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(y_imageCenter-y_centerPixel_target)**2)
+      
+      
+      print("x_centerPixel_target : "+str(x_centerPixel_target))
+      dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(detection_object.y_imageCenter-y_centerPixel_target)**2)
       print("[mission] Current distance: %.2fpx ; Altitude: %.2fm." % (dist_center, altitudeAuSol))
         
       """
@@ -375,12 +412,13 @@ def mission_largage_zone_inconnu(id_to_find):
         time.sleep(0.5)
         package_dropped = True
         break
-      
+      time.sleep(0.1)
     #--------------- Some white square found -------------------
     elif whiteSquare_found == True :
       compteur_aruco = 0
       compteur_no_detect = 0
       print("[mission] Detection of 1 or many white squares (%i times)" % compteur_whiteSquare)
+      
 
       # Check saved_ids in detection dictionary
       for saved_id in saved_markers :
@@ -395,21 +433,23 @@ def mission_largage_zone_inconnu(id_to_find):
           """
           id_to_test = saved_id
           break
-              
+      time.sleep(0.1)      
     else :
       compteur_aruco = 0
       #compteur_whiteSquare = 0
+      #print ("COUCOU COUCOU COUCOU COUCOU COUCOU COUCOU COUCOU COUCOU")
       print("[mission] No detection or wrong tag (%i times)" % compteur_no_detect)
+      
         
       #--------------- No white square, no ArUco -----------------
-      if compteur_no_detect > 10 and compteur_whiteSquare != 0 :
+      if compteur_no_detect > 10 and compteur_whiteSquare != 0 and altitudeAuSol < 5:
         print("[mission] 10 times without tag detection, not interesting place.")
-        saved_markers[id_to_test][1] = True  # Saved markers explored, not interesting
+        saved_markers[id_to_test] = (saved_markers[id_to_test][0], True)
         id_to_test = -1
         # drone_object.passage_mode_Auto()
         compteur_whiteSquare = 0
         # Gestion mission auto, voir avec Thomas
-
+      time.sleep(0.1)
       
     # print("compteur_aruco = "+str(compteur_aruco))
     # print("compteur_whiteSquare = "+str(compteur_whiteSquare))
@@ -470,7 +510,7 @@ def mission_largage_GPS_silent(GPS_target_delivery, id_to_find):
 #--------------------------------------------------------------
 
 if __name__ == "__main__":
-  id_to_find = 69  # List of ids:
+  id_to_find = 25  # List of ids:
   GPS_target_delivery = LocationGlobalRelative(48.7068570, 7.7344260, altitudeDeVol)
   
   # Mission 1: Delivery at known location
