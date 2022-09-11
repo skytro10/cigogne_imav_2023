@@ -3,12 +3,21 @@ from detection_target import Detection
 from picamera import PiCamera
 from dronekit import LocationGlobalRelative
 from math import degrees
+import time
 
-monDrone = Drone()
+drone_object = Drone()
 detection_object = Detection(PiCamera(), 25)
-saved_markers = {-1: (monDrone.vehicle.location.global_relative_frame, True)}
-
+saved_markers = {-1: (drone_object.vehicle.location.global_relative_frame, True)}
+drone_object.set_mode("GUIDED")
 while True :
+  drone_object.set_mode("GUIDED")
+  time.sleep(1)
+  drone_object.set_mode("STABILIZE")
+  time.sleep(1)
+
+
+
+  """
   altitudeAuSol = monDrone.vehicle.rangefinder.distance
   longitude = monDrone.vehicle.location.global_relative_frame.lon
   latitude = monDrone.vehicle.location.global_relative_frame.lat
@@ -24,3 +33,4 @@ while True :
   # print( "alt : "+ str(altitudeAuSol))
   # measured_distance = detection_object.get_distance_image(x_centerPixel_target, y_centerPixel_target, altitudeAuSol)
   # print("distance :" + str(measured_distance))
+  """

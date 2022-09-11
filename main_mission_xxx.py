@@ -145,7 +145,7 @@ class myThread(threading.Thread):
   def stopped(self):
     return self._stop_event.is_set()
 
-def asservissementasservissement(drone_object,last_errx, last_erry, errsumx, errsumy):
+def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx, errsumy):
   global compteur_no_detect
   global compteur_whiteSquare
   global compteur_aruco
@@ -168,9 +168,7 @@ def asservissementasservissement(drone_object,last_errx, last_erry, errsumx, err
   vy = 0
   vz = 0
                
-  if not drone_object.get_mode() == "GUIDED"  or package_dropped == True :
-    drone_object.set_velocity(0, 0, 0, 1)
-    return 0, 0, 0, 0
+  print("ASERVISSEMENT !!!!!!!!!!!!!!!!!!")
              
   if altitudeAuSol < 5 :
     kpx = 0.001
@@ -187,7 +185,7 @@ def asservissementasservissement(drone_object,last_errx, last_erry, errsumx, err
       if altitudeRelative > 25 :  # si on altitudeRelative sup a 25m stop le thread
         drone_object.set_velocity(0, 0, 0, 1)
         #print ("altitudeRelative > 30")
-        break
+        return 0, 0, 0, 0
       else :  # pas de Detection Drone prend de l altitude
         vx = 0
         vy = 0
@@ -383,13 +381,14 @@ def mission_largage_zone_inconnu(id_to_find):
   
   #########debut de la Detection 
   myThread_Detection_target.start()
-  time.sleep(3)
+  time.sleep(2)
 
   while drone_object.get_mode() == "GUIDED" or drone_object.get_mode() == "AUTO":
 
     # Asservissement control
     if drone_object.get_mode() == "GUIDED" :
-      last_errx, last_erry, errsumx, errsumy = asservissement(drone_object,last_errx, last_erry, errsumx, errsumy)
+      print ("Conditiotion GUIDED OK")
+      last_errx, last_erry, errsumx, errsumy = asservissement(drone_object, detection_object, last_errx, last_erry, errsumx, errsumy)
   
     #--------------- Good ArUco ID found -----------------------
     if goodID_marker_found == True :
@@ -410,9 +409,11 @@ def mission_largage_zone_inconnu(id_to_find):
         time.sleep(0.5)
         package_dropped = True
         break
-      time.sleep(0.1)
+      
     #--------------- Some white square found -------------------
     elif whiteSquare_found == True :
+      while drone_object.get_mode() != "GUIDED" :
+        drone_object.set_mode("GUIDED")
       compteur_aruco = 0
       compteur_no_detect = 0
       print("[mission] Detection of 1 or many white squares (%i times)" % compteur_whiteSquare)
@@ -423,24 +424,23 @@ def mission_largage_zone_inconnu(id_to_find):
         # Check boolean: if True, needs to be explored
         if saved_markers[saved_id][1] == False:
           print("[mission] Detection of 1 or many white squares (%i times)" % compteur_whiteSquare)
-          drone_object.set_mode("GUIDED")
           id_to_test = saved_id
           break
-      time.sleep(0.1)      
+           
     else :
       compteur_aruco = 0
       #compteur_whiteSquare = 0
       #print ("COUCOU COUCOU COUCOU COUCOU COUCOU COUCOU COUCOU COUCOU")
-      print("[mission] No detection or wrong tag (%i times)" % compteur_no_detect)
-      print("[mission] compteur_whiteSquare (%i times)" % compteur_whiteSquare)
+      # print("[mission] No detection or wrong tag (%i times)" % compteur_no_detect)
+      # print("[mission] compteur_whiteSquare (%i times)" % compteur_whiteSquare)
         
       #--------------- No white square, no ArUco -----------------
       if compteur_no_detect > 5 and compteur_whiteSquare != 0 :
         print("[mission] 10 times without tag detection, not interesting place.")
         saved_markers[id_to_test] = (saved_markers[id_to_test][0], True)
         id_to_test = -1
-        myThread_asservissement.stop()
-        drone_object.passage_mode_Auto()
+        while drone_object.get_mode() != "AUTO" :
+          drone_object.passage_mode_Auto()
         last_errx = 0
         last_erry = 0
         errsumx = 0
@@ -449,7 +449,7 @@ def mission_largage_zone_inconnu(id_to_find):
         compteur_whiteSquare = 0
         # Gestion mission auto, voir avec Thomas
 
-      time.sleep(0.1)
+      
       
     # print("compteur_aruco = "+str(compteur_aruco))
     # print("compteur_whiteSquare = "+str(compteur_whiteSquare))

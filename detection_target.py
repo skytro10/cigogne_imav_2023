@@ -232,6 +232,7 @@ class Detection:
 
               # Storing new white squares in dictionary
               if new_location_found:
+                print("[vision] New location found !")
                 self.whiteSquare_found = True
                 #print(".whiteSquare_found = True")
                 if max(saved_markers.keys()) <= 1000:
@@ -250,17 +251,18 @@ class Detection:
               
               #cv2.imwrite(os.path.join(self.path, "mask_hls"+name), mask_hls)
               #cv2.imwrite(os.path.join(self.path, "mask_closing"+name), mask_closing)
-
+              
+              
               for id_markers in saved_markers :
                 if saved_markers[id_markers][1] == False:
-                  self.whiteSquare_found = True
-                  name = "Test_1_Img_" + str(self.img_compteur) + "_yes_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude)
+                  #self.whiteSquare_found = True
+                  name = "Test_1_Img_" + str(self.img_compteur) + "_yes_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude) + "head_" + str(heading)
 
     if self.marker_found == False and self.whiteSquare_found == False:
       self.notfound_count+=1
       x_pixel_target_out = None
       y_pixel_target_out = None
-      name = "Test_1_Img_" + str(self.img_compteur) + "_no_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude)
+      name = "Test_1_Img_" + str(self.img_compteur) + "_no_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude) + "head_" + str(heading)      
       #print ("aruco and white square likely not found")
       # print("notfound_count : "+str(self.notfound_count))  
         
