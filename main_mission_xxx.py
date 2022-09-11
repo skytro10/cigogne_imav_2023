@@ -30,7 +30,7 @@ from commande_drone import Drone
 
 #--------------------- Parametres du vehicule ----------------------------
 vitesse = .3 #m/s
-altitudeDeVol = 20
+altitudeDeVol = 15
 #exemple de position GPS
   #locationMaisonStrasbourgTerrainBasket = LocationGlobalRelative(48.574458, 7.771747, 10)
 research_whiteSquare = True
@@ -80,6 +80,7 @@ class myThread(threading.Thread):
   global y_centerPixel_target
   global altitudeAuSol
   global id_to_test
+  global altitudeRelative
   
 
   def __init__(self, threadID, name, altitudeDeVol, drone_object, research_whiteSquare,saved_markers,detection_object):
@@ -105,6 +106,7 @@ class myThread(threading.Thread):
     global y_centerPixel_target
     global altitudeAuSol
     global id_to_test
+    global altitudeRelative
   
 
 
@@ -161,6 +163,7 @@ class myThread(threading.Thread):
         
       while True :
         
+        print("asserv")
         if not self.drone_object.get_mode() == "GUIDED"  or package_dropped == True :
           self.drone_object.set_velocity(0, 0, 0, 1)
           break
@@ -179,7 +182,7 @@ class myThread(threading.Thread):
           
         if x_centerPixel_target == None or y_centerPixel_target == None :   # echec Detection
           
-          if compteur_no_detect > 10 :   #on fixe le nombre d'image consecutive sans Detection pour considerer qu il ne detecte pas
+          if compteur_no_detect > 5 :   #on fixe le nombre d'image consecutive sans Detection pour considerer qu il ne detecte pas
             if altitudeRelative > 25 :  # si on altitudeRelative sup a 25m stop le thread
               self.drone_object.set_velocity(0, 0, 0, 1)
               #print ("altitudeRelative > 30")
@@ -199,9 +202,9 @@ class myThread(threading.Thread):
         
         else :  # Detection ok 
       
-          dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(detection_object.y_imageCenter-y_centerPixel_target)**2)
-          errx = detection_object.x_imageCenter - x_centerPixel_target
-          erry = detection_object.y_imageCenter - y_centerPixel_target
+          dist_center = math.sqrt((self.detection_object.x_imageCenter-x_centerPixel_target)**2+(self.detection_object.y_imageCenter-y_centerPixel_target)**2)
+          errx = self.detection_object.x_imageCenter - x_centerPixel_target
+          erry = self.detection_object.y_imageCenter - y_centerPixel_target
           if abs(errx) <= 10:   #marge de 10pxl pour considerer que la cible est au centre de l image
                   errx = 0
           if abs(erry) <= 10:
@@ -241,14 +244,14 @@ class myThread(threading.Thread):
           
           if dist_center <= 50 :
             self.drone_object.set_velocity(vy, vx, vz, 1) 
-            #print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center <= 30")
+            print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center <= 30")
           else :
             #lancer un deplacement pour ce rapprocher du centre sans descendre ou monter
             if altitudeAuSol < 2 :
               vz = 0
 
             self.drone_object.set_velocity(vy, vx, vz, 1)  # Pour le sense de la camera, X controle le 'east' et Y controle le 'North'
-            #print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center decale")
+            print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center decale")
         
       print("[asservt] Fin du thread. SEE YOU SOON!")
 
@@ -366,10 +369,10 @@ def mission_largage_zone_inconnu(id_to_find):
   
   #########verrouillage servomoteur et procedure arm and takeoff
   print("[mission] Mission3 started: Delivery at unknown location.")
-  # drone_object.lancement_decollage(altitudeDeVol)
+  drone_object.lancement_decollage(5)
   
   #########passage en mode AUTO et debut de la mission
-  # drone_object.passage_mode_Auto()
+  drone_object.passage_mode_Auto()
   
   #########Create new threads
   myThread_Detection_target= myThread(1, "Thread_Detection_target",altitudeDeVol,drone_object,research_whiteSquare,saved_markers,detection_object)
@@ -377,8 +380,8 @@ def mission_largage_zone_inconnu(id_to_find):
   
   # a partir d'un certain waypoint declencher le thread de detection
   
-  # while drone_object.vehicle.commands.next <= 2 :
-  #  pass
+  while drone_object.vehicle.commands.next <= 2 :
+    pass
     
   
   #########debut de la Detection 
@@ -399,12 +402,12 @@ def mission_largage_zone_inconnu(id_to_find):
       dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(detection_object.y_imageCenter-y_centerPixel_target)**2)
       print("[mission] Current distance: %.2fpx ; Altitude: %.2fm." % (dist_center, altitudeAuSol))
         
-      """
+      
       if not myThread_asservissement.is_alive() : #verifie que le thread d asservissement n est pas deja lance si non lancement du thread asservissement
-      drone_object.set_mode("GUIDED")
-      time.sleep(O.3)
-      myThread_asservissement.start()
-      """
+        drone_object.set_mode("GUIDED")
+        time.sleep(0.3)
+        myThread_asservissement.start()
+      
         
       if dist_center <= 50 and altitudeAuSol < 1.5 :  # condition pour faire le largage
         print("[mission] Largage !")
@@ -425,12 +428,12 @@ def mission_largage_zone_inconnu(id_to_find):
         # Check boolean: if True, needs to be explored
         if saved_markers[saved_id][1] == False:
           print("[mission] Detection of 1 or many white squares (%i times)" % compteur_whiteSquare)
-          """
+          
           if not myThread_asservissement.is_alive() : #verifie que le thread d asservissement n est pas deja lance si non lancement du thread asservissement
-          drone_object.set_mode("GUIDED")
-          time.sleep(O.3)
-          myThread_asservissement.start()
-          """
+            drone_object.set_mode("GUIDED")
+            time.sleep(0.3)
+            myThread_asservissement.start()
+          
           id_to_test = saved_id
           break
       time.sleep(0.1)      
@@ -439,16 +442,19 @@ def mission_largage_zone_inconnu(id_to_find):
       #compteur_whiteSquare = 0
       #print ("COUCOU COUCOU COUCOU COUCOU COUCOU COUCOU COUCOU COUCOU")
       print("[mission] No detection or wrong tag (%i times)" % compteur_no_detect)
-      
+      print("[mission] compteur_whiteSquare (%i times)" % compteur_whiteSquare)
         
       #--------------- No white square, no ArUco -----------------
-      if compteur_no_detect > 10 and compteur_whiteSquare != 0 and altitudeAuSol < 5:
+      if compteur_no_detect > 5 and compteur_whiteSquare != 0 :
         print("[mission] 10 times without tag detection, not interesting place.")
         saved_markers[id_to_test] = (saved_markers[id_to_test][0], True)
         id_to_test = -1
-        # drone_object.passage_mode_Auto()
+        myThread_asservissement.stop()
+        drone_object.passage_mode_Auto()
+        time.sleep(0.5)
         compteur_whiteSquare = 0
         # Gestion mission auto, voir avec Thomas
+
       time.sleep(0.1)
       
     # print("compteur_aruco = "+str(compteur_aruco))
@@ -465,9 +471,10 @@ def mission_largage_zone_inconnu(id_to_find):
   # permet d'attendre la fin du thread
   myThread_Detection_target.join()
   
-  # if  drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO"):  #securite pour ne pas que le drone reprenne la main en cas d interruption
+  
+  if  drone_object.vehicle.get_mode() == "GUIDED" or drone_object.vehicle.get_mode() == "AUTO":  #securite pour ne pas que le drone reprenne la main en cas d interruption
     #########repart en mode RTL
-  drone_object.set_mode("RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
+    drone_object.set_mode("RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
 #--------------------------------------------------------------
 
 #--------------------------------------------------------------

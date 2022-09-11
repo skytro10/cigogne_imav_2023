@@ -23,9 +23,9 @@ class Detection:
     self.marker_found = False
     self.whiteSquare_found = False 
     self.camera = camera
-    self.camera.brightness = 50
-    self.camera.saturation = -50
-    self.camera.contrast = 50
+    #self.camera.brightness = 50
+    #self.camera.saturation = -50
+    #self.camera.contrast = 50
     self.camera.resolution = (640, 480)
     #camera.resolution = (1920, 1080)
     self.camera.framerate = 32
@@ -71,7 +71,7 @@ class Detection:
     # self.saved_markers = {-1: (LocationGlobalRelative(48.58111,7.764722,0), False)}
 
   def Detection_aruco(self, latitude, longitude, altitude, heading, saved_markers, id_to_test, research_whiteSquare):
-    print("[visiont] New image. ID to test: %s. Number of saved items: %s." % (id_to_test, len(saved_markers)))
+    #print("[visiont] New image. ID to test: %s. Number of saved items: %s." % (id_to_test, len(saved_markers)))
     x_pixel_target_out = None
     y_pixel_target_out = None
     name = "Text"
@@ -151,7 +151,7 @@ class Detection:
       
       #-- Incrementer les compteurs 
       self.found_count+=1
-      # print("marquer trouve")
+      #print("marquer trouve")
       # print("found_count : "+str(self.found_count))
       
         
@@ -216,7 +216,7 @@ class Detection:
               for id_markers in saved_markers:
                 saved_location = saved_markers[id_markers][0]
                 distance_meters = get_distance_metres(estimated_location, saved_location)
-                print("distance_meters entre la position du marker teste et l estimation de la nouvelle image : "+str(distance_meters))
+                # print("distance_meters entre la position du marker teste et l estimation de la nouvelle image : "+str(distance_meters))
 
                 # White square already checked with location fusion
                 if distance_meters < 7:
@@ -233,9 +233,10 @@ class Detection:
               # Storing new white squares in dictionary
               if new_location_found:
                 self.whiteSquare_found = True
+                #print(".whiteSquare_found = True")
                 if max(saved_markers.keys()) <= 1000:
                   white_square_id = 1001
-                  print("New location found")
+                  #print("New location found")
                   # cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 255, 0), 2)
                   # cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 255, 0), 2)
                 else:
@@ -260,7 +261,7 @@ class Detection:
       x_pixel_target_out = None
       y_pixel_target_out = None
       name = "Test_1_Img_" + str(self.img_compteur) + "_no_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude)
-      print ("aruco and white square likely not found")
+      #print ("aruco and white square likely not found")
       # print("notfound_count : "+str(self.notfound_count))  
         
     cv2.circle(frame, (320, 240), 50, (255,255,255), 1)
