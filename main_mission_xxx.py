@@ -94,6 +94,7 @@ class myThread(threading.Thread):
     self.research_whiteSquare = research_whiteSquare
     self.saved_markers = saved_markers
     self.detection_object = detection_object
+
   def run(self):
     print ("Starting " + self.name)
     
@@ -106,15 +107,8 @@ class myThread(threading.Thread):
     global y_centerPixel_target
     global altitudeAuSol
     global id_to_test
-<<<<<<< HEAD
-      
-=======
     global altitudeRelative
-  
 
-
-    
->>>>>>> 1bed01e77cc4cfbaa45f0250c935e59c47327c8c
     if self.name == "Thread_Detection_target":
       print("[visiont] HELLO WORLD! Vision thread launched!")
       while True :
@@ -143,38 +137,7 @@ class myThread(threading.Thread):
       
       print("[visiont] Fin du thread. BYE BYE!")
 
-    if self.name == "Thread_asservissement":
-<<<<<<< HEAD
-=======
-      print("[asservt] HI GUYS! Asserv thread launched!")
-      dErrx = 0
-      dErry = 0
-      errsumx = 0
-      errsumy = 0
-      
-      last_errx = 0
-      last_erry = 0
-      
-      # PD Coefficients
-      kpx = 0.004
-      kpy = 0.004
-      kdx = 0.0001  # 0.00001 working "fine" for both
-      kdy = 0.0001
-      kix = 0.000001  # 0.0000001
-      kiy = 0.000001
-      
-      vx = 0
-      vy = 0
-      vz = 0
-        
-      while True :
-        
-        print("asserv")
-        if not self.drone_object.get_mode() == "GUIDED"  or package_dropped == True :
-          self.drone_object.set_velocity(0, 0, 0, 1)
-          break
-          
->>>>>>> 1bed01e77cc4cfbaa45f0250c935e59c47327c8c
+#    if self.name == "Thread_asservissement":
 
   def stop(self):
     self._stop_event.set()
@@ -211,46 +174,22 @@ def asservissement(last_errx, last_erry, errsumx, errsumy):
           
           
   if x_centerPixel_target == None or y_centerPixel_target == None :   # echec Detection
-          
-<<<<<<< HEAD
-    if compteur_no_detect > 10 :   #on fixe le nombre d'image consecutive sans Detection pour considerer qu il ne detecte pas
+    if compteur_no_detect > 5 :   #on fixe le nombre d'image consecutive sans Detection pour considerer qu il ne detecte pas
       if altitudeRelative > 25 :  # si on altitudeRelative sup a 25m stop le thread
         self.drone_object.set_velocity(0, 0, 0, 1)
         #print ("altitudeRelative > 30")
-        return 0, 0, 0, 0
+        break
       else :  # pas de Detection Drone prend de l altitude
         vx = 0
         vy = 0
         vz = -0.5
         self.drone_object.set_velocity(vx, vy, vz, 1)
         #print ("prise d'altitude vz = -0.5")
-=======
-          if compteur_no_detect > 5 :   #on fixe le nombre d'image consecutive sans Detection pour considerer qu il ne detecte pas
-            if altitudeRelative > 25 :  # si on altitudeRelative sup a 25m stop le thread
-              self.drone_object.set_velocity(0, 0, 0, 1)
-              #print ("altitudeRelative > 30")
-              break
-            else :  # pas de Detection Drone prend de l altitude
-              vx = 0
-              vy = 0
-              vz = -0.5
-              self.drone_object.set_velocity(vx, vy, vz, 1)
-              #print ("prise d'altitude vz = -0.5")
-          
-          elif compteur_no_detect > 2 :   # fixer la position du Drone en cas de non Detection
-            self.drone_object.set_velocity(0, 0, 0, 1)
-            #print ("compteur_no_detect > 2   stabilisation drone")
-              
-                 
->>>>>>> 1bed01e77cc4cfbaa45f0250c935e59c47327c8c
-        
     elif compteur_no_detect > 2 :   # fixer la position du Drone en cas de non Detection
       self.drone_object.set_velocity(0, 0, 0, 1)
       #print ("compteur_no_detect > 2   stabilisation drone")
     
     else :  # Detection ok 
-      
-<<<<<<< HEAD
       dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(detection_object.y_imageCenter-y_centerPixel_target)**2)
       errx = detection_object.x_imageCenter - x_centerPixel_target
       erry = detection_object.y_imageCenter - y_centerPixel_target
@@ -258,26 +197,6 @@ def asservissement(last_errx, last_erry, errsumx, errsumy):
         errx = 0
       if abs(erry) <= 10:
         erry = 0
-=======
-          dist_center = math.sqrt((self.detection_object.x_imageCenter-x_centerPixel_target)**2+(self.detection_object.y_imageCenter-y_centerPixel_target)**2)
-          errx = self.detection_object.x_imageCenter - x_centerPixel_target
-          erry = self.detection_object.y_imageCenter - y_centerPixel_target
-          if abs(errx) <= 10:   #marge de 10pxl pour considerer que la cible est au centre de l image
-                  errx = 0
-          if abs(erry) <= 10:
-                  erry = 0
-        
-          # PD control
-          dErrx = (errx - last_errx)# / delta_time
-          dErry = (erry - last_erry)# / delta_time
-          errsumx += errx# * delta_time
-          errsumy += erry# * delta_time
-        
-          #~ print("errsumx: %s, errsumy: %s" % (errsumy, errsumy))
-        
-          vx = (kpx * errx) + (kdx * dErrx) + (kix * errsumx)
-          vy = (kpy * erry) + (kdy * dErry) + (kiy * errsumy)
->>>>>>> 1bed01e77cc4cfbaa45f0250c935e59c47327c8c
           
       # PD control
       dErrx = (errx - last_errx)# / delta_time
@@ -286,8 +205,6 @@ def asservissement(last_errx, last_erry, errsumx, errsumy):
       errsumy += erry# * delta_time
         
       #~ print("errsumx: %s, errsumy: %s" % (errsumy, errsumy))
-        
-<<<<<<< HEAD
       vx = (kpx * errx) + (kdx * dErrx) + (kix * errsumx)
       vy = (kpy * erry) + (kdy * dErry) + (kiy * errsumy)
       
@@ -301,23 +218,6 @@ def asservissement(last_errx, last_erry, errsumx, errsumy):
         vx = min(max(vx, -5.0), 5.0)
         vy = min(max(vy, -5.0), 5.0)
         vx = -vx                        # High opencv is south Dronekit
-=======
-          # Last error for Derivative
-          
-          last_errx = errx
-          last_erry = erry
-          
-          if dist_center <= 50 :
-            self.drone_object.set_velocity(vy, vx, vz, 1) 
-            print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center <= 30")
-          else :
-            #lancer un deplacement pour ce rapprocher du centre sans descendre ou monter
-            if altitudeAuSol < 2 :
-              vz = 0
-
-            self.drone_object.set_velocity(vy, vx, vz, 1)  # Pour le sense de la camera, X controle le 'east' et Y controle le 'North'
-            print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center decale")
->>>>>>> 1bed01e77cc4cfbaa45f0250c935e59c47327c8c
         
       # Dronekit
       # X positive Forward / North
