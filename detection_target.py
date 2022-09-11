@@ -93,16 +93,16 @@ class Detection:
     self.img_compteur+=1
     
     ########################## traitement pour aruco
-    #gray  = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) #-- remember, OpenCV stores color images in Blue, Green, Red
+    gray  = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) #-- remember, OpenCV stores color images in Blue, Green, Red
     
     #blur = cv2.GaussianBlur(frame,(5,5),0)       # Gaussian blur filter  
-    hls = cv2.cvtColor(frame, cv2.COLOR_BGR2HLS)  # Convert from BGR to HLS color space  
-    lower_bound = (0,200,0)     # Select white color in HLS space
-    upper_bound = (255,255,255)
-    mask_hls = cv2.inRange(hls, lower_bound, upper_bound)
+    #hls = cv2.cvtColor(frame, cv2.COLOR_BGR2HLS)  # Convert from BGR to HLS color space  
+    #lower_bound = (0,200,0)     # Select white color in HLS space
+    #upper_bound = (255,255,255)
+    #mask_hls = cv2.inRange(hls, lower_bound, upper_bound)
   
     #-- Trouver tous les marquers dans l'image 
-    corners, ids, rejected = aruco.detectMarkers(image=mask_hls, dictionary=self.aruco_dict, parameters=self.parameters,
+    corners, ids, rejected = aruco.detectMarkers(image=gray, dictionary=self.aruco_dict, parameters=self.parameters,
                               cameraMatrix=self.camera_matrix, distCoeff=self.camera_distortion)
     # print(ids.flatten()[0])
     # print(type(ids))
