@@ -11,8 +11,10 @@ import cv2
 import cv2.aruco as aruco
 import sys, time
 import math
+import json
 
 from threading import Thread
+from pymavlink import mavutil, mavwp
 import threading
 
 from math import atan2, cos, radians, sin, sqrt, pi
@@ -32,6 +34,11 @@ class Drone:
     chemin_drone = '/dev/ttyACM0'
     self.vehicle = connect(chemin_drone, wait_ready=True, baud=57600, heartbeat_timeout=2)
     print("Connection OK")
+
+    self.fenceloader = None
+    self.fenceloader = mavwp.MAVFenceLoader()
+    self.fenceloader.clear()
+
   
   def arm_and_takeoff(self, aTargetAltitude):
     """
@@ -289,7 +296,7 @@ class Drone:
       0,0,0,0,0,0 # param 2 ~ 7
     )
     # send command to vehicle
-    print "Sending fence enable %s ..." % enabled
+    print("Sending fence enable %s ..." % enabled)
     self.vehicle.send_mavlink(msg)
     
 
@@ -312,7 +319,7 @@ class Drone:
       print("Sending %s" % (msg))
       self.sending_fence_point = msg
       if self.sending_fence_point is None:
-        print "Failed to send fence point %s" % msg
+        print("Failed to send fence point %s" % msg)
       elif (self.current_fence_point.idx != self.sending_fence_point.idx or 
             abs(self.current_fence_point.lat - self.sending_fence_point.lat) >= 0.00003 or 
             abs(self.current_fence_point.lng - self.sending_fence_point.lng) >= 0.00003):
@@ -344,7 +351,7 @@ class Drone:
     self.fenceloader.clear()
     
     # test datasets, geofence coordinates
-    x = '[ { "lat": 52.173323, "lng": 4.416418 }, { "lat": 52.1734036, "lng": 4.4167667}, { "lat": 52.1730434, "lng": 4.4177699 }, { "lat": 52.1726601, "lng": 4.4163993 }]'
+    x = '[ { "lat": 52.1734217, "lng": 4.4162303 }, { "lat": 52.1736158, "lng": 4.4168525}, { "lat": 52.1732803, "lng": 4.4175714 }, { "lat": 52.1730204, "lng": 4.4161927 }]'
     
     fence = json.loads(x)
     
@@ -367,8 +374,10 @@ class Drone:
     self.fenceloader.target_component = 0
     self.fenceloader.reindex()
     
-    self.vehicle.parameters["FENCE_ACTION"] = mavutil.mavlink.FENCE_ACTION_TERMINATE # your action here
+    self.vehicle.parameters["FENCE_ACTION"] = mavutil.mavlink.FENCE_ACTION_RTL # your action here
+    print(self.vehicle.parameters["FENCE_ACTION"])
     self.vehicle.parameters["FENCE_TOTAL" ] = self.fenceloader.count()
+    print(self.fenceloader.count())
     
     for i in range(self.fenceloader.count()):
       self.current_fence_point = self.fenceloader.point(i)
@@ -378,3 +387,7 @@ class Drone:
 
   def clear_fence(self):
     self.vehicle.parameters["FENCE_TOTAL" ] = 0
+
+ #  @self.vehicle.on_message('FENCE_STATUS')
+ # def listener(self, name, message):
+ #   print(message)
