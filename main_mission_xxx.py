@@ -45,8 +45,8 @@ saved_markers = {-1: (LocationGlobalRelative(48.58111,7.764722,0), True)}
 
 
 # setup variable global pour les threads
-global compteur_no_detect
-compteur_no_detect = 0
+global counter_no_detect
+counter_no_detect = 0
 global compteur_whiteSquare
 compteur_whiteSquare = 0
 global compteur_aruco
@@ -121,18 +121,15 @@ class myThread(threading.Thread):
         heading = self.drone_object.vehicle.attitude.yaw
         
         #le srcipt Detection Target
-        x_centerPixel_target, y_centerPixel_target, goodID_marker_found, whiteSquare_found, self.saved_markers = self.detection_object.Detection_aruco(latitude, longitude, altitudeAuSol, heading,self.saved_markers, id_to_test, research_whiteSquare)
-        if goodID_marker_found == True :
-          compteur_aruco += 1
-        elif whiteSquare_found == True :
-          compteur_whiteSquare += 1
-        else :
-          compteur_no_detect += 1
-          
-        
+        x_centerPixel_target, y_centerPixel_target, aruco_seen, good_aruco_found, white_square_seen, self.saved_markers = self.detection_object.Detection_aruco(latitude, longitude, altitudeAuSol, heading,self.saved_markers, id_to_test, research_whiteSquare)
+        # if goodID_marker_found == True :
+        #   compteur_aruco += 1
+        # elif whiteSquare_found == True :
+        #   compteur_whiteSquare += 1
+        # else :
+        #   compteur_no_detect += 1
         
         if (not self.drone_object.get_mode() == "GUIDED" and not self.drone_object.get_mode() == "AUTO")  or altitudeRelative > 30 : #arret du Thread en cas de changement de mode, de larguage ou d'altitude sup a 25m
-          
           break
       
       print("[visiont] Fin du thread. BYE BYE!")
@@ -277,8 +274,13 @@ def mission_largage_GPS_connu(GPS_target_delivery, id_to_find):
 
   #########debut de la Detection et du mouvement
   myThread_Detection_target.start()
-  time.sleep(1)
-  # myThread_asservissement.start()
+  time.sleep(2)
+  
+  while drone_object.get_mode() == "GUIDED" or drone_object.get_mode() == "AUTO":
+    # Asservissement control
+    if drone_object.get_mode() == "GUIDED" :
+      print ("Condition GUIDED OK")
+      last_errx, last_erry, errsumx, errsumy = asservissement(drone_object, detection_object, last_errx, last_erry, errsumx, errsumy)
   
   """# Ensure to stop a thread if the other is stopped
   # https://stackoverflow.com/questions/323972/is-there-any-way-to-kill-a-thread
@@ -342,17 +344,23 @@ def mission_largage_GPS_incertain(GPS_target_delivery, id_to_find):
 
 #--------------------------------------------------------------
 def mission_largage_zone_inconnu(id_to_find):
+  # Boolean variables
+  global aruco_seen
+  global good_aruco_found
+  global white_square_seen
 
-  global compteur_no_detect
-  global compteur_whiteSquare
-  global compteur_aruco
-  global goodID_marker_found
-  global whiteSquare_found
+  # Counter variables
+  global counter_no_detect
+  global counter_white_square
+  global counter_aruco
+
   global x_centerPixel_target
   global y_centerPixel_target
   global altitudeAuSol
   global id_to_test
 
+  id_to_test = -1
+  
   last_errx = 0
   last_erry = 0
   errsumx = 0
@@ -374,34 +382,32 @@ def mission_largage_zone_inconnu(id_to_find):
   # myThread_asservissement= myThread(2, "Thread_asservissement",altitudeDeVol,drone_object,research_whiteSquare,saved_markers,detection_object)  
   
   # a partir d'un certain waypoint declencher le thread de detection
-  
   while drone_object.vehicle.commands.next <= 2 :
     pass
     
-  
   #########debut de la Detection 
   myThread_Detection_target.start()
   time.sleep(2)
 
-  while drone_object.get_mode() == "GUIDED" or drone_object.get_mode() == "AUTO":
+  while (drone_object.get_mode() == "GUIDED" or drone_object.get_mode() == "AUTO") or not package_dropped:
 
     # Asservissement control
     if drone_object.get_mode() == "GUIDED" :
-      print ("Conditiotion GUIDED OK")
+      print ("Condition GUIDED OK")
       last_errx, last_erry, errsumx, errsumy = asservissement(drone_object, detection_object, last_errx, last_erry, errsumx, errsumy)
   
-    #--------------- Good ArUco ID found -----------------------
-    if goodID_marker_found == True :
-      drone_object.set_mode("GUIDED")
-      #compteur_whiteSquare = 0
-      compteur_no_detect = 0      
-      print("[mission] Good aruco tag detected !")
+    #--------------- Case 1: Good ArUco ID found -----------------------
+    if good_aruco_found:
+      print("[detection] Case 1: Good ArUco ID found!")
       
-      print("x_centerPixel_target : "+str(x_centerPixel_target))
+      counter_no_detect = 0
+
+      while drone_object.get_mode() != "GUIDED":
+        drone_object.set_mode("GUIDED")
+      
+      # print("x_centerPixel_target : "+str(x_centerPixel_target))
       dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(detection_object.y_imageCenter-y_centerPixel_target)**2)
       print("[mission] Current distance: %.2fpx ; Altitude: %.2fm." % (dist_center, altitudeAuSol))
-        
-      
         
       if dist_center <= 50 and altitudeAuSol < 1.5 :  # condition pour faire le largage
         print("[mission] Largage !")
@@ -409,47 +415,72 @@ def mission_largage_zone_inconnu(id_to_find):
         time.sleep(0.5)
         package_dropped = True
         break
+
+    #--------------- Case 2: Some white square seen --------------------
+    elif white_square_seen:
+      print("[detection] Case 2: Some white square seen.")
+
+      counter_no_detect = 0
+      counter_white_square += 1
       
-    #--------------- Some white square found -------------------
-    elif whiteSquare_found == True :
-      while drone_object.get_mode() != "GUIDED" :
+      while drone_object.get_mode() != "GUIDED":
         drone_object.set_mode("GUIDED")
-      compteur_aruco = 0
-      compteur_no_detect = 0
-      print("[mission] Detection of 1 or many white squares (%i times)" % compteur_whiteSquare)
-      
+        
+      print("[mission] Detection of 1 or many white squares (%i times)" % counter_white_square)
 
       # Check saved_ids in detection dictionary
       for saved_id in saved_markers :
-        # Check boolean: if True, needs to be explored
+        # Check boolean: if False, needs to be explored
         if saved_markers[saved_id][1] == False:
-          print("[mission] Detection of 1 or many white squares (%i times)" % compteur_whiteSquare)
           id_to_test = saved_id
+          print("[mission] Detection targetted towards id %s" % id_to_test)
           break
-           
-    else :
-      compteur_aruco = 0
-      #compteur_whiteSquare = 0
-      #print ("COUCOU COUCOU COUCOU COUCOU COUCOU COUCOU COUCOU COUCOU")
+
+    #--------------- Case 3: ArUco tag seen but id false ---------------
+    elif aruco_seen:
+      print("[detection] Case 3: ArUco seen BUT not good ArUco found.")
+
+      counter_no_detect = 0
+
+      # Since it is not the good ArUco, continue the AUTO mission
+      while drone_object.get_mode() != "AUTO" :
+          drone_object.passage_mode_Auto()
+
+      # Reset visual PID errors
+      last_errx = 0
+      last_erry = 0
+      errsumx = 0
+      errsumy = 0
+
+      saved_markers[id_to_test] = (saved_markers[id_to_test][0], True)
+      id_to_test = -1
+      # print("[mission] Detection targetted towards id %s" % id_to_test)
+
+    #--------------- Case 4: No detection of white or ArUco ------------
+    else:
+      print("[detection] Case 4: No detection of white or ArUco.")
+
+      counter_no_detect += 1
+      counter_white_square = 0
+      
+      # print ("COUCOU COUCOU COUCOU COUCOU COUCOU COUCOU COUCOU COUCOU")
       # print("[mission] No detection or wrong tag (%i times)" % compteur_no_detect)
       # print("[mission] compteur_whiteSquare (%i times)" % compteur_whiteSquare)
-        
-      #--------------- No white square, no ArUco -----------------
-      if compteur_no_detect > 5 and compteur_whiteSquare != 0 :
-        print("[mission] 10 times without tag detection, not interesting place.")
-        saved_markers[id_to_test] = (saved_markers[id_to_test][0], True)
-        id_to_test = -1
+      
+      if counter_no_detect > 5:
+        print("[mission] 5 times without tag or white detection, not interesting place.")
+
         while drone_object.get_mode() != "AUTO" :
           drone_object.passage_mode_Auto()
-        last_errx = 0
-        last_erry = 0
-        errsumx = 0
-        errsumy = 0
-        time.sleep(0.5)
-        compteur_whiteSquare = 0
-        # Gestion mission auto, voir avec Thomas
 
-      
+          # Reset visual PID errors
+          last_errx = 0
+          last_erry = 0
+          errsumx = 0
+          errsumy = 0
+
+          saved_markers[id_to_test] = (saved_markers[id_to_test][0], True)
+          id_to_test = -1
       
     # print("compteur_aruco = "+str(compteur_aruco))
     # print("compteur_whiteSquare = "+str(compteur_whiteSquare))

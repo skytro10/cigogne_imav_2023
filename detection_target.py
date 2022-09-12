@@ -20,8 +20,17 @@ from utilities import get_distance_metres, get_GPS_location, get_distance_angle_
 
 class Detection:
   def __init__(self, camera, id_to_find):
-    self.marker_found = False
-    self.whiteSquare_found = False 
+
+    #--------------- Boolean variables --------------------
+    self.aruco_seen = False
+    self.good_aruco_found = False
+    self.white_square_seen = False
+
+    #--------------- Counter variables --------------------
+    # self.found_count = 0 
+    # self.not_found_count = 0
+    
+    #--------------- Camera parametres --------------------
     self.camera = camera
     #self.camera.brightness = 50
     #self.camera.saturation = -50
@@ -31,12 +40,10 @@ class Detection:
     self.camera.framerate = 32
     self.rawCapture = PiRGBArray(self.camera, size=(640, 480))
   
-    #--- Define Tag
+    #--------------- ArUco parametres --------------------
     self.id_to_find = id_to_find
     self.marker_size = 5 #- [cm]
-    self.found_count = 0 
-    self.notfound_count = 0
-  
+    
     #--------------- Resolution ---------------------------
     # Focal length and sensors dimensions for Pi camera
     # See: https://www.raspberrypi.com/documentation/accessories/camera.html 
@@ -71,11 +78,17 @@ class Detection:
     # self.saved_markers = {-1: (LocationGlobalRelative(48.58111,7.764722,0), False)}
 
   def Detection_aruco(self, latitude, longitude, altitude, heading, saved_markers, id_to_test, research_whiteSquare):
+    # Boolean variables reset
+    self.aruco_seen = False
+    self.good_aruco_found = False
+    self.white_square_seen = False
+    
     #print("[visiont] New image. ID to test: %s. Number of saved items: %s." % (id_to_test, len(saved_markers)))
     x_pixel_target_out = None
     y_pixel_target_out = None
     name = "Text"
     new_location_found = False
+    
     #--- Capturer le videocamera 
     self.camera.capture(self.rawCapture, format="bgr")
     frame = self.rawCapture.array
@@ -107,12 +120,14 @@ class Detection:
     # print(ids.flatten()[0])
     # print(type(ids))
     # print("ids : "+str(ids))
-    self.marker_found = False
-    self.whiteSquare_found = False
 
     #--------------- Detection ArUco Tags ---------------------------
     if ids is not None : # and ids[0] == Detection.id_to_find:
-      aruco_id = ids.flatten()[0]
+      # Boolean update
+      self.aruco_seen = True
+      # self.found_count += 1
+      
+      aruco_id = ids.flatten()[0]  # Select the first ArUco id from the list
       x_sum = corners[0][0][0][0]+ corners[0][0][1][0]+ corners[0][0][2][0]+ corners[0][0][3][0]
       y_sum = corners[0][0][0][1]+ corners[0][0][1][1]+ corners[0][0][2][1]+ corners[0][0][3][1]
       x_centerPixel_target = int(x_sum*.25)
@@ -131,32 +146,27 @@ class Detection:
       current_location = LocationGlobalRelative(latitude, longitude, 0)
       estimated_location = get_GPS_location(current_location, heading + angle_vision, distance_vision)
 
-      saved_location = saved_markers[id_to_test][0]  # Compare to id_to_test saved location
-      distance_meters = get_distance_metres(estimated_location, saved_location)
-      cv2.putText(frame, str(aruco_id), (int(x_centerPixel_target), int(y_centerPixel_target)), font, 1, (0, 0, 0), 2)
-
+      # saved_location = saved_markers[id_to_test][0]  # Compare to id_to_test saved location
+      # distance_meters = get_distance_metres(estimated_location, saved_location)
+      # cv2.putText(frame, str(aruco_id), (int(x_centerPixel_target), int(y_centerPixel_target)), font, 1, (0, 0, 0), 2)
       #print(distance_meters)
       name = "Test_1_Img_" + str(self.img_compteur) + "_yes_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude) 
       # If the white square of interest is located at the ArUco place
-      if distance_meters < 7:
-        pass
-        # print(saved_markers[id_to_test])
-      saved_markers[aruco_id] = (saved_markers[id_to_test][0], True)  # Put white square infos inside ArUco ids
+      saved_markers[aruco_id] = (estimated_location, True)  # Save Aruco id and its location
         # print(saved_markers[aruco_id])
         # saved_markers[aruco_id][1] = True  # Saved Aruco markers explored, not interesting
         #saved_markers.pop(id_to_test)                      # Remove current white square id
 
-      if ids[0] == self.id_to_find:
+      if aruco_id == self.id_to_find:
         self.marker_found = True
       
       #-- Incrementer les compteurs 
-      self.found_count+=1
       #print("marquer trouve")
       # print("found_count : "+str(self.found_count))
       
         
     #--------------- Detection White Squares ------------------------
-    elif research_whiteSquare == True :
+    elif research_whiteSquare == True :      
       #------------- Image processing for white squares -------------
       blur = cv2.GaussianBlur(frame,(5,5),0)       # Gaussian blur filter  
       hls = cv2.cvtColor(blur, cv2.COLOR_BGR2HLS)  # Convert from BGR to HLS color space  
@@ -182,6 +192,7 @@ class Detection:
         
         #--------------- Altitude and square filters ------------------
         if altitude == 0.0:
+          print("[visiont] WARNING! Null altitude null sent by rangefinder.")
           break
         if area < 70000*altitude**-2  and area > 10000*altitude**-2 and len(approx) ==4 and altitude > 5:
           # print("Detection area correspondant")
@@ -198,6 +209,9 @@ class Detection:
             pixelTest = mask_closing[int(y_centerPixel_target),int(x_centerPixel_target)]
             #print("pixelTest : "+str(pixelTest))
             if pixelTest == 255 :  #verifie couleur du carre detecte 255 c est blanc
+              # Boolean and counter update
+              self.white_square_seen = True
+              # self.found_count += 1
               
               # cv2.drawContours(frame, [c], -1, (255, 0, 0), 1)
               cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 0, 255), 2)
@@ -221,7 +235,7 @@ class Detection:
                 # White square already checked with location fusion
                 if distance_meters < 7:
                   white_square_id = id_markers
-                  new_location_found = False
+                  # new_location_found = False
                   if white_square_id == id_to_test:
                     x_pixel_target_out = x_centerPixel_target
                     y_pixel_target_out = y_centerPixel_target
@@ -232,19 +246,14 @@ class Detection:
 
               # Storing new white squares in dictionary
               if new_location_found:
-                print("[vision] New location found !")
-                self.whiteSquare_found = True
+                # self.whiteSquare_found = True
                 #print(".whiteSquare_found = True")
                 if max(saved_markers.keys()) <= 1000:
-                  white_square_id = 1001
-                  #print("New location found")
-                  # cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 255, 0), 2)
-                  # cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 255, 0), 2)
+                  white_square_id = 1001        # First white square with id 1001
                 else:
                   max_id = max(saved_markers.keys())
-                  white_square_id = max_id + 1
-                  # cv2.line(frame, (int(x_centerPixel_target), int(y_centerPixel_target)-20), (int(x_centerPixel_target), int(y_centerPixel_target)+20), (0, 255, 0), 2)
-                  # cv2.line(frame, (int(x_centerPixel_target)-20, int(y_centerPixel_target)), (int(x_centerPixel_target)+20, int(y_centerPixel_target)), (0, 255, 0), 2)
+                  white_square_id = max_id + 1  # Others white square with growing ids
+                print("[visiont] New location found with id %s." % white_square_id)
                 saved_markers[white_square_id] = (estimated_location, False)
               
               cv2.putText(frame, str(white_square_id), (int(x_centerPixel_target), int(y_centerPixel_target)), font, 1, (0, 0, 0), 2)
@@ -252,14 +261,8 @@ class Detection:
               #cv2.imwrite(os.path.join(self.path, "mask_hls"+name), mask_hls)
               #cv2.imwrite(os.path.join(self.path, "mask_closing"+name), mask_closing)
               
-              
-              for id_markers in saved_markers :
-                if saved_markers[id_markers][1] == False:
-                  #self.whiteSquare_found = True
-                  name = "Test_1_Img_" + str(self.img_compteur) + "_yes_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude) + "head_" + str(heading)
-
-    if self.marker_found == False and self.whiteSquare_found == False:
-      self.notfound_count+=1
+    if self.aruco_seen == False and self.white_square_seen == False:
+      # self.not_found_count += 1
       x_pixel_target_out = None
       y_pixel_target_out = None
       name = "Test_1_Img_" + str(self.img_compteur) + "_no_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude) + "head_" + str(heading)      
@@ -273,4 +276,4 @@ class Detection:
     cv2.imwrite(os.path.join(self.path, "hls_"+name +".png"), mask_hls)
     print("Image saved !")
     
-    return x_pixel_target_out, y_pixel_target_out, self.marker_found, self.whiteSquare_found, saved_markers
+    return x_pixel_target_out, y_pixel_target_out, self.aruco_seen, self.good_aruco_found, self.white_square_seen, saved_markers
