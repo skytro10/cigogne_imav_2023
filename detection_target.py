@@ -158,12 +158,7 @@ class Detection:
         #saved_markers.pop(id_to_test)                      # Remove current white square id
 
       if aruco_id == self.id_to_find:
-        self.marker_found = True
-      
-      #-- Incrementer les compteurs 
-      #print("marquer trouve")
-      # print("found_count : "+str(self.found_count))
-      
+        self.good_aruco_found = True
         
     #--------------- Detection White Squares ------------------------
     elif research_whiteSquare == True :      
@@ -219,8 +214,8 @@ class Detection:
 
               # Estimating marker location from vision
               distance_vision, angle_vision = get_distance_angle_picture(self.x_imageCenter, self.y_imageCenter,
-                                                                 x_centerPixel_target, y_centerPixel_target,
-                                                                 altitude, self.dist_coeff_x, self.dist_coeff_y)
+                                                                         x_centerPixel_target, y_centerPixel_target,
+                                                                         altitude, self.dist_coeff_x, self.dist_coeff_y)
               current_location = LocationGlobalRelative(latitude, longitude, 0)
               estimated_location = get_GPS_location(current_location, heading + angle_vision, distance_vision)
 
@@ -246,8 +241,6 @@ class Detection:
 
               # Storing new white squares in dictionary
               if new_location_found:
-                # self.whiteSquare_found = True
-                #print(".whiteSquare_found = True")
                 if max(saved_markers.keys()) <= 1000:
                   white_square_id = 1001        # First white square with id 1001
                 else:

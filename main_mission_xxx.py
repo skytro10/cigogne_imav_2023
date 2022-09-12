@@ -36,8 +36,9 @@ altitudeDeVol = 15
 research_whiteSquare = True
 distanceAccuracy = 2 # rayon en metre pour valider un goto
 
-global goodID_marker_found
-global whiteSquare_found
+global aruco_seen
+global good_aruco_found
+global white_square_seen
 global id_to_test
 id_to_test = -1
 global saved_markers
@@ -47,10 +48,10 @@ saved_markers = {-1: (LocationGlobalRelative(48.58111,7.764722,0), True)}
 # setup variable global pour les threads
 global counter_no_detect
 counter_no_detect = 0
-global compteur_whiteSquare
-compteur_whiteSquare = 0
-global compteur_aruco
-compteur_aruco = 0
+global counter_white_square
+counter_white_square = 0
+# global compteur_aruco
+# compteur_aruco = 0
 global package_dropped
 package_dropped = False
 global x_centerPixel_target
@@ -71,11 +72,11 @@ global altitudeAuSol
 ###################### Thread creation et appel de fonction ####################
 
 class myThread(threading.Thread):
-  global compteur_no_detect
-  global compteur_whiteSquare
-  global compteur_aruco
-  global goodID_marker_found
-  global whiteSquare_found
+  global counter_no_detect
+  global counter_white_square
+  global aruco_seen
+  global good_aruco_found
+  global white_square_seen
   global x_centerPixel_target
   global y_centerPixel_target
   global altitudeAuSol
@@ -98,11 +99,11 @@ class myThread(threading.Thread):
   def run(self):
     print ("Starting " + self.name)
     
-    global compteur_no_detect
-    global compteur_whiteSquare
-    global compteur_aruco
-    global goodID_marker_found
-    global whiteSquare_found
+    global counter_no_detect
+    global counter_white_square
+    global aruco_seen
+    global good_aruco_found
+    global white_square_seen
     global x_centerPixel_target
     global y_centerPixel_target
     global altitudeAuSol
@@ -122,19 +123,12 @@ class myThread(threading.Thread):
         
         #le srcipt Detection Target
         x_centerPixel_target, y_centerPixel_target, aruco_seen, good_aruco_found, white_square_seen, self.saved_markers = self.detection_object.Detection_aruco(latitude, longitude, altitudeAuSol, heading,self.saved_markers, id_to_test, research_whiteSquare)
-        # if goodID_marker_found == True :
-        #   compteur_aruco += 1
-        # elif whiteSquare_found == True :
-        #   compteur_whiteSquare += 1
-        # else :
-        #   compteur_no_detect += 1
-        
-        if (not self.drone_object.get_mode() == "GUIDED" and not self.drone_object.get_mode() == "AUTO")  or altitudeRelative > 30 : #arret du Thread en cas de changement de mode, de larguage ou d'altitude sup a 25m
+
+        # Arret du Thread en cas de changement de mode, de larguage ou d'altitude sup a 25m
+        if (not self.drone_object.get_mode() == "GUIDED" and not self.drone_object.get_mode() == "AUTO")  or altitudeRelative > 30 : 
           break
       
       print("[visiont] Fin du thread. BYE BYE!")
-
-#    if self.name == "Thread_asservissement":
 
   def stop(self):
     self._stop_event.set()
@@ -143,11 +137,11 @@ class myThread(threading.Thread):
     return self._stop_event.is_set()
 
 def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx, errsumy):
-  global compteur_no_detect
-  global compteur_whiteSquare
-  global compteur_aruco
-  global goodID_marker_found
-  global whiteSquare_found
+  global counter_no_detect
+  global counter_white_square
+  global aruco_seen
+  global good_aruco_found
+  global white_square_seen
   global x_centerPixel_target
   global y_centerPixel_target
   global altitudeAuSol
@@ -178,7 +172,7 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
           
           
   if x_centerPixel_target == None or y_centerPixel_target == None :   # echec Detection
-    if compteur_no_detect > 5 :   #on fixe le nombre d'image consecutive sans Detection pour considerer qu il ne detecte pas
+    if counter_no_detect > 5 :   #on fixe le nombre d'image consecutive sans Detection pour considerer qu il ne detecte pas
       if altitudeRelative > 25 :  # si on altitudeRelative sup a 25m stop le thread
         drone_object.set_velocity(0, 0, 0, 1)
         #print ("altitudeRelative > 30")
@@ -189,7 +183,7 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
         vz = 0
         drone_object.set_velocity(vx, vy, vz, 1)
         #
-    elif compteur_no_detect > 2 :   # fixer la position du Drone en cas de non Detection
+    elif counter_no_detect > 2 :   # fixer la position du Drone en cas de non Detection
       drone_object.set_velocity(0, 0, 0, 1)
       #print ("compteur_no_detect > 2   stabilisation drone")
     
@@ -250,11 +244,11 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
 
 #--------------------------------------------------------------
 def mission_largage_GPS_connu(GPS_target_delivery, id_to_find):
-  global compteur_no_detect
-  global compteur_whiteSquare
-  global compteur_aruco
-  global goodID_marker_found
-  global whiteSquare_found
+  global counter_no_detect
+  global counter_white_square
+  global aruco_seen
+  global good_aruco_found
+  global white_square_seen
   global x_centerPixel_target
   global y_centerPixel_target
   global altitudeAuSol
@@ -371,7 +365,7 @@ def mission_largage_zone_inconnu(id_to_find):
   detection_object = Detection(PiCamera(), id_to_find)  # creer l objet detection
   
   #########verrouillage servomoteur et procedure arm and takeoff
-  print("[mission] Mission3 started: Delivery at unknown location.")
+  print("[mission] Launching and take off routine...")
   drone_object.lancement_decollage(5)
   
   #########passage en mode AUTO et debut de la mission
