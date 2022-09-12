@@ -25,7 +25,7 @@ from picamera.array import PiRGBArray
 
 from detection_target import Detection
 from commande_drone import Drone
-
+import sys
 
 
 #--------------------- Parametres du vehicule ----------------------------
@@ -68,7 +68,22 @@ global longitude
 global latitude
 global altitudeAuSol
 
+log="./test.log"
+redir=RedirectText(log)
+#sys.stdout=redir
+sys.stderr=redir
 
+class RedirectText(object):
+    def __init__(self,aWxTextCtrl):
+        self.file=aWxTextCtrl
+         
+    def flush(self):
+        pass
+ 
+    def write(self,string):
+        f = open(self.file,'a')
+        f.write(string)
+        f.close()
 ###################### Thread creation et appel de fonction ####################
 
 class myThread(threading.Thread):

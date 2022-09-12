@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -24,46 +23,43 @@ from datetime import datetime
 from picamera import PiCamera,Color
 from picamera.array import PiRGBArray
 
-
 from detection_target import Detection
 from commande_drone import Drone
 
+import sys
 
 ###################### Dronekit ####################
 
 
 #--------------------- Connection ----------------------------
 
-
-monDrone = Drone()
-
-
-missionList = monDrone.download_mission()
-
-print("nbr WP : "+ str(monDrone.vehicle.commands.count))
-
-monDrone.vehicle.commands.next = 0
-
-print ("Current Waypoint: %s" % monDrone.vehicle.commands.next)
-
-monDrone.vehicle.commands.next = 5
-
-print ("Current Waypoint: %s" % monDrone.vehicle.commands.next)
-
-nextwaypoint = monDrone.vehicle.commands.next
-
-missionitem = monDrone.vehicle.commands[nextwaypoint-1] #commands are zero indexed
-
-lat=missionitem.x
-
-print("lat : "+str(lat))
+class RedirectText(object):
+    def __init__(self,aWxTextCtrl):
+        self.file=aWxTextCtrl
+         
+    def flush(self):
+        pass
+ 
+    def write(self,string):
+        f = open(self.file,'a')
+        f.write(string)
+        f.close()
 
 
 
 
 
-
-
+log="./test.log"
+redir=RedirectText(log)
+#sys.stdout=redir
+sys.stderr=redir
+print("test")
+        
+        
+while True :
+  print("je t aime !!!")
+  time.sleep(1)
+  
 
 
 print("Fin du test")
