@@ -359,11 +359,11 @@ def mission_largage_zone_inconnu(id_to_find):
   last_erry = 0
   errsumx = 0
   errsumy = 0
- 
+
   print("[mission] Mission3 started: Delivery at unknown location.")
   drone_object = Drone()    #permet de connecter le drone via dronekit en creant l objet drone
   detection_object = Detection(PiCamera(), id_to_find)  # creer l objet detection
-  
+  # self.f.write("[mission] Mission3 started: Delivery at unknown location.")
   #########verrouillage servomoteur et procedure arm and takeoff
   print("[mission] Launching and take off routine...")
   drone_object.lancement_decollage(5)

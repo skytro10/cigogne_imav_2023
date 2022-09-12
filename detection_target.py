@@ -62,6 +62,7 @@ class Detection:
     parent_dir = '/home/housso97/Desktop/code_IMAV2022_Thomas/saved_images'
     self.path = os.path.join(parent_dir, dossier)
     os.mkdir(self.path)
+    # self.f = open(str(self.path) + "log.txt", "a")
   
     #--- Camera calibration path
     calib_path  = "/home/housso97/Desktop/camera_01/cameraa_02/"
@@ -188,6 +189,7 @@ class Detection:
         #--------------- Altitude and square filters ------------------
         if altitude == 0.0:
           print("[visiont] WARNING! Null altitude null sent by rangefinder.")
+          # self.f.write("[visiont] WARNING! Null altitude null sent by rangefinder.")
           break
         if area < 70000*altitude**-2  and area > 10000*altitude**-2 and len(approx) ==4 and altitude > 5:
           # print("Detection area correspondant")
@@ -247,6 +249,7 @@ class Detection:
                   max_id = max(saved_markers.keys())
                   white_square_id = max_id + 1  # Others white square with growing ids
                 print("[visiont] New location found with id %s." % white_square_id)
+                # self.f.write("[visiont] New location found with id %s." % white_square_id)
                 saved_markers[white_square_id] = (estimated_location, False)
               
               cv2.putText(frame, str(white_square_id), (int(x_centerPixel_target), int(y_centerPixel_target)), font, 1, (0, 0, 0), 2)
