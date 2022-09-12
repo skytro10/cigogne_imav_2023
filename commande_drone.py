@@ -35,9 +35,9 @@ class Drone:
     self.vehicle = connect(chemin_drone, wait_ready=True, baud=57600, heartbeat_timeout=2)
     print("Connection OK")
 
-  #  self.fenceloader = None
-  #  self.fenceloader = mavwp.MAVFenceLoader()
-  #  self.fenceloader.clear()
+#    self.fenceloader = None
+#    self.fenceloader = mavwp.MAVFenceLoader()
+#    self.fenceloader.clear()
 
   
   def arm_and_takeoff(self, aTargetAltitude):

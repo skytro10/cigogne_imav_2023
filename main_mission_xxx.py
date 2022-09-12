@@ -42,7 +42,7 @@ global white_square_seen
 global id_to_test
 id_to_test = -1
 global saved_markers
-saved_markers = {-1: (LocationGlobalRelative(48.58111,7.764722,0), True)}
+saved_markers = {-1: (LocationGlobalRelative(52.1715877,4.4169307,0), True)}
 
 
 # setup variable global pour les threads
