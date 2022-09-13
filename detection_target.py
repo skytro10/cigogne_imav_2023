@@ -115,7 +115,7 @@ class Detection:
     #upper_bound = (255,255,255)
     #mask_hls = cv2.inRange(hls, lower_bound, upper_bound)
   
-    #-- Trouver tous les marquers dans l'image 
+    #-- Trouver tous les marquers dans l'image
     corners, ids, rejected = aruco.detectMarkers(image=gray, dictionary=self.aruco_dict, parameters=self.parameters,
                               cameraMatrix=self.camera_matrix, distCoeff=self.camera_distortion)
     # print(ids.flatten()[0])
@@ -150,8 +150,7 @@ class Detection:
       # saved_location = saved_markers[id_to_test][0]  # Compare to id_to_test saved location
       # distance_meters = get_distance_metres(estimated_location, saved_location)
       # cv2.putText(frame, str(aruco_id), (int(x_centerPixel_target), int(y_centerPixel_target)), font, 1, (0, 0, 0), 2)
-      #print(distance_meters)
-      name = "Test_1_Img_" + str(self.img_compteur) + "_yes_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude) 
+      #print(distance_meters) 
       # If the white square of interest is located at the ArUco place
       saved_markers[aruco_id] = (estimated_location, True)  # Save Aruco id and its location
         # print(saved_markers[aruco_id])
@@ -201,6 +200,7 @@ class Detection:
             # cv2.drawContours(frame, [c], -1, (0, 0, 255), 1)
             x_centerPixel_target = np.mean(c, axis=0)[0][0]
             y_centerPixel_target = np.mean(c, axis=0)[0][1]
+            print(x_centerPixel_target)
             arrete_marker_pxl = sqrt(area)
             
             pixelTest = mask_closing[int(y_centerPixel_target),int(x_centerPixel_target)]
@@ -240,6 +240,8 @@ class Detection:
                   # Location already found
                 else:
                   new_location_found = True
+                  x_pixel_target_out = x_centerPixel_target
+                  y_pixel_target_out = y_centerPixel_target
 
               # Storing new white squares in dictionary
               if new_location_found:
@@ -261,9 +263,11 @@ class Detection:
       # self.not_found_count += 1
       x_pixel_target_out = None
       y_pixel_target_out = None
-      name = "Test_1_Img_" + str(self.img_compteur) + "_no_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude) + "head_" + str(heading)      
+      name = "Test_1_Img_" + str(self.img_compteur) + "_no_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude) + "head_" + str(heading)
       #print ("aruco and white square likely not found")
-      # print("notfound_count : "+str(self.notfound_count))  
+      # print("notfound_count : "+str(self.notfound_count))
+    else:
+      name = "Test_1_Img_" + str(self.img_compteur) + "_yes_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude) + "head_" + str(heading)
         
     cv2.circle(frame, (320, 240), 50, (255,255,255), 1)
     cv2.line(frame, (self.x_imageCenter, self.y_imageCenter-20), (self.x_imageCenter, self.y_imageCenter+20), (255, 0, 0), 2)

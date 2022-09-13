@@ -68,11 +68,6 @@ global longitude
 global latitude
 global altitudeAuSol
 
-log="./test.log"
-redir=RedirectText(log)
-#sys.stdout=redir
-sys.stderr=redir
-
 class RedirectText(object):
     def __init__(self,aWxTextCtrl):
         self.file=aWxTextCtrl
@@ -84,6 +79,12 @@ class RedirectText(object):
         f = open(self.file,'a')
         f.write(string)
         f.close()
+
+log="./test.log"
+redir=RedirectText(log)
+#sys.stdout=redir
+sys.stderr=redir
+
 ###################### Thread creation et appel de fonction ####################
 
 class myThread(threading.Thread):
@@ -142,6 +143,28 @@ class myThread(threading.Thread):
         # Arret du Thread en cas de changement de mode, de larguage ou d'altitude sup a 25m
         if (not self.drone_object.get_mode() == "GUIDED" and not self.drone_object.get_mode() == "AUTO")  or altitudeRelative > 30 : 
           break
+
+        #--------------- Case 1: Good ArUco ID found -----------------------
+        if good_aruco_found:
+          counter_no_detect = 0
+
+        #--------------- Case 2: Some white square seen --------------------
+        elif white_square_seen:
+          counter_no_detect = 0
+          counter_white_square += 1
+
+        #--------------- Case 3: ArUco tag seen but id false ---------------
+        elif aruco_seen:
+          counter_no_detect = 0
+
+          saved_markers[id_to_test] = (saved_markers[id_to_test][0], True)
+          id_to_test = -1
+        # print("[mission] Detection targetted towards id %s" % id_to_test)
+
+        #--------------- Case 4: No detection of white or ArUco ------------
+        else:
+          counter_no_detect += 1
+          counter_white_square = 0
       
       print("[visiont] Fin du thread. BYE BYE!")
 
@@ -169,7 +192,10 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
   kdy = 0.0001
   kix = 0.000001  # 0.0000001
   kiy = 0.000001
-      
+ 
+  last_x_centerPixel_target = x_centerPixel_target
+  last_y_centerPixel_target = y_centerPixel_target
+
   vx = 0
   vy = 0
   vz = 0
@@ -186,7 +212,7 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
     kpy = 0.002
           
           
-  if x_centerPixel_target == None or y_centerPixel_target == None :   # echec Detection
+  if last_x_centerPixel_target == None or last_y_centerPixel_target == None :   # echec Detection
     if counter_no_detect > 5 :   #on fixe le nombre d'image consecutive sans Detection pour considerer qu il ne detecte pas
       if altitudeRelative > 25 :  # si on altitudeRelative sup a 25m stop le thread
         drone_object.set_velocity(0, 0, 0, 1)
@@ -202,10 +228,11 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
       drone_object.set_velocity(0, 0, 0, 1)
       #print ("compteur_no_detect > 2   stabilisation drone")
     
-    else :  # Detection ok 
-      dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(detection_object.y_imageCenter-y_centerPixel_target)**2)
-      errx = detection_object.x_imageCenter - x_centerPixel_target
-      erry = detection_object.y_imageCenter - y_centerPixel_target
+    else :  # Detection ok
+      print(last_x_centerPixel_target)
+      dist_center = math.sqrt((detection_object.x_imageCenter-int(last_x_centerPixel_target))**2+(detection_object.y_imageCenter-int(last_y_centerPixel_target))**2)
+      errx = detection_object.x_imageCenter - last_x_centerPixel_target
+      erry = detection_object.y_imageCenter - last_y_centerPixel_target
       if abs(errx) <= 10:   #marge de 10pxl pour considerer que la cible est au centre de l image
         errx = 0
       if abs(erry) <= 10:
@@ -242,7 +269,7 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
       
       else :
         dist_center_threshold = 100
-        
+
       if dist_center <= dist_center_threshold :
         drone_object.set_velocity(vy, vx, vz, 1) 
         #print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center <= 30"
@@ -278,12 +305,12 @@ def mission_largage_GPS_connu(GPS_target_delivery, id_to_find):
   
   #Drone.move_servo(vehicle,10, False)
   #########Create new threads
-  myThread_Detection_target= myThread(1, "Thread_Detection_target",altitudeDeVol,drone_object,research_whiteSquare,saved_markers,detection_object)
+  # myThread_Detection_target= myThread(1, "Thread_Detection_target",altitudeDeVol,drone_object,research_whiteSquare,saved_markers,detection_object)
   # myThread_asservissement= myThread(2, "Thread_asservissement",altitudeDeVol,drone_object,research_whiteSquare,saved_markers,detection_object)  
 
   #########debut de la Detection et du mouvement
-  myThread_Detection_target.start()
-  time.sleep(2)
+  # myThread_Detection_target.start()
+  # time.sleep(2)
   
   while drone_object.get_mode() == "GUIDED" or drone_object.get_mode() == "AUTO":
     # Asservissement control
@@ -367,6 +394,7 @@ def mission_largage_zone_inconnu(id_to_find):
   global y_centerPixel_target
   global altitudeAuSol
   global id_to_test
+  global saved_markers
 
   id_to_test = -1
   
@@ -387,7 +415,7 @@ def mission_largage_zone_inconnu(id_to_find):
   drone_object.passage_mode_Auto()
   
   #########Create new threads
-  myThread_Detection_target= myThread(1, "Thread_Detection_target",altitudeDeVol,drone_object,research_whiteSquare,saved_markers,detection_object)
+  # myThread_Detection_target= myThread(1, "Thread_Detection_target",altitudeDeVol,drone_object,research_whiteSquare,saved_markers,detection_object)
   # myThread_asservissement= myThread(2, "Thread_asservissement",altitudeDeVol,drone_object,research_whiteSquare,saved_markers,detection_object)  
   
   # a partir d'un certain waypoint declencher le thread de detection
@@ -395,11 +423,19 @@ def mission_largage_zone_inconnu(id_to_find):
     pass
     
   #########debut de la Detection 
-  myThread_Detection_target.start()
-  time.sleep(2)
+  # myThread_Detection_target.start()
+  # time.sleep(2)
 
   while (drone_object.get_mode() == "GUIDED" or drone_object.get_mode() == "AUTO") or not package_dropped:
-
+    # actualisation de l altitude et gps
+    altitudeAuSol = drone_object.vehicle.rangefinder.distance
+    altitudeRelative = drone_object.vehicle.location.global_relative_frame.alt
+    longitude = drone_object.vehicle.location.global_relative_frame.lon
+    latitude = drone_object.vehicle.location.global_relative_frame.lat
+    heading = drone_object.vehicle.attitude.yaw
+        
+    #le srcipt Detection Target
+    x_centerPixel_target, y_centerPixel_target, aruco_seen, good_aruco_found, white_square_seen, saved_markers = detection_object.Detection_aruco(latitude, longitude, altitudeAuSol, heading, saved_markers, id_to_test, True)
     # Asservissement control
     if drone_object.get_mode() == "GUIDED" :
       print ("Condition GUIDED OK")
