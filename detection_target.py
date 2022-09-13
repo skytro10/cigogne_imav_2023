@@ -277,7 +277,7 @@ class Detection:
     else:
       name = "Test_1_Img_" + str(self.img_compteur) + "_yes_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude) + "head_" + str(heading)
         
-    cv2.circle(frame, (320, 240), 50, (255,255,255), 1)
+    cv2.circle(frame, (320, 240), 75, (255,255,255), 1)
     cv2.line(frame, (self.x_imageCenter, self.y_imageCenter-20), (self.x_imageCenter, self.y_imageCenter+20), (255, 0, 0), 2)
     cv2.line(frame, (self.x_imageCenter-20, self.y_imageCenter), (self.x_imageCenter+20, self.y_imageCenter), (255, 0, 0), 2)
     cv2.imwrite(os.path.join(self.path, name+".png"), frame)

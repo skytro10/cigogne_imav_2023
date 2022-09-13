@@ -223,8 +223,8 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
         vz = 0
         drone_object.set_velocity(vx, vy, vz, 1)
         #
-    # elif counter_no_detect > 5 :   # fixer la position du Drone en cas de non Detection
-    drone_object.set_velocity(0, 0, 0, 1)
+    elif counter_no_detect > 1 :   # fixer la position du Drone en cas de non Detection
+      drone_object.set_velocity(0, 0, 0, 1)
       #print ("[asserv] compteur_no_detect > 2   stabilisation drone")
   
     errx = 0
@@ -265,11 +265,11 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
       vz = 0.5
     else:
       vz = 0.25
-      # Establish limit to outputs
-      vx = min(max(vx, -5.0), 5.0)
-      vy = min(max(vy, -5.0), 5.0)
-      vx = -vx                        # High opencv is south Dronekit
-      # vy = -vy
+    # Establish limit to outputs
+    vx = min(max(vx, -5.0), 5.0)
+    vy = min(max(vy, -5.0), 5.0)
+    vx = -vx                        # High opencv is south Dronekit
+    # vy = -vy   # Faux : -y -x , x -y,
       
     # Dronekit
     # X positive Forward / North
@@ -469,7 +469,7 @@ def mission_largage_zone_inconnu(id_to_find):
       dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(detection_object.y_imageCenter-y_centerPixel_target)**2)
       print("[mission] Current distance: %.2fpx ; Altitude: %.2fm." % (dist_center, altitudeAuSol))
         
-      if dist_center <= 50 and altitudeAuSol < 1.5 :  # condition pour faire le largage
+      if dist_center <= 75 and altitudeAuSol < 4 :  # condition pour faire le largage
         print("[mission] Largage !")
         drone_object.move_servo(10, True)
         time.sleep(0.5)
@@ -482,9 +482,6 @@ def mission_largage_zone_inconnu(id_to_find):
 
       counter_no_detect = 0
       counter_white_square += 1
-      
-      while drone_object.get_mode() != "GUIDED":
-        drone_object.set_mode("GUIDED")
         
       print("[mission] Detection of 1 or many white squares (%i times)" % counter_white_square)
 
@@ -494,6 +491,8 @@ def mission_largage_zone_inconnu(id_to_find):
         if saved_markers[saved_id][1] == False:
           # if saved_id > 1001 and saved_markers[saved_id-1][1] == False:
           #  saved_markers[saved_id-1].pop()
+          while drone_object.get_mode() != "GUIDED":
+            drone_object.set_mode("GUIDED")
           id_to_test = saved_id
           print("[mission] Detection targetted towards id %s" % id_to_test)
 
