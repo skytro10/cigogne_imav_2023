@@ -234,9 +234,14 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
     
   else :  # Detection ok
     print ("[asserv] detection OK")
-    dist_center = math.sqrt((detection_object.x_imageCenter-int(x_centerPixel_target))**2+(detection_object.y_imageCenter-int(y_centerPixel_target))**2)
     errx = detection_object.x_imageCenter - x_centerPixel_target
     erry = detection_object.y_imageCenter - y_centerPixel_target
+    dist_center = math.sqrt(errx**2+erry**2)
+    dist_angle = atan2(erry, errx)
+    heading = drone_object.vehicle.attitude.yaw
+    alpha = dist_angle + heading
+    errx = dist_center * cos(alpha)
+    erry = dist_center * sin(alpha)
     if abs(errx) <= 10:   #marge de 10pxl pour considerer que la cible est au centre de l image
       errx = 0
     if abs(erry) <= 10:
