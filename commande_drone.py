@@ -102,7 +102,7 @@ class Drone:
 
   def set_velocity(self, velocity_x, velocity_y, velocity_z, duration):
     # only let commands through at 10hz
-    # print("[mission] Velocity set to values: vx: %.2f ; vy: %.2f ; vz %.2f." % (velocity_x, velocity_y, velocity_z))
+    print("[mission] Velocity set to values: vx: %.2f ; vy: %.2f ; vz %.2f." % (velocity_x, velocity_y, velocity_z))
   
     #global last_set_velocity
     #last_set_velocity = time.time()

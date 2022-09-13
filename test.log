@@ -1,73 +1,35 @@
-WARNING:autopilot:Battery 1 is low 10.38V used 1566 mAh
-WARNING:autopilot:Battery Failsafe
-CRITICAL:autopilot:PreArm: Battery failsafe
 Traceback (most recent call last):
-Exception in thread   File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 565, in <module>
-Thread_Detection_target:
-Traceback (most recent call last):
-  File "/usr/lib/python3.9/threading.py", line 954, in _bootstrap_inner
-    self.run()
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 141, in run
-    x_centerPixel_target, y_centerPixel_target, aruco_seen, good_aruco_found, white_square_seen, self.saved_markers = self.detection_object.Detection_aruco(latitude, longitude, altitudeAuSol, heading,self.saved_markers, id_to_test, research_whiteSquare)    
-mission_largage_zone_inconnu(id_to_find)  File "/home/housso97/Desktop/code_IMAV2022_Thomas/detection_target.py", line 250, in Detection_aruco
-    print("[visiont] New location found with id %s." % white_square_id)
-OSError
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 481, in mission_largage_zone_inconnu
-: [Errno 5] Input/output error
-    print("[mission] 5 times without tag or white detection, not interesting place.")
-OSError: [Errno 5] Input/output error
-Traceback (most recent call last):
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 565, in <module>
-    mission_largage_zone_inconnu(id_to_find)
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 407, in mission_largage_zone_inconnu
-    last_errx, last_erry, errsumx, errsumy = asservissement(drone_object, detection_object, last_errx, last_erry, errsumx, errsumy)
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 207, in asservissement
-    dist_center = math.sqrt((detection_object.x_imageCenter-int(x_centerPixel_target))**2+(detection_object.y_imageCenter-int(y_centerPixel_target))**2)
-TypeError: int() argument must be a string, a bytes-like object or a number, not 'NoneType'
-Traceback (most recent call last):
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 598, in <module>
-    mission_largage_zone_inconnu(id_to_find)
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 429, in mission_largage_zone_inconnu
-    altitudeAuSol = self.drone_object.vehicle.rangefinder.distance
-NameError: name 'self' is not defined
-CRITICAL:autopilot:PreArm: Throttle (RC3) is not neutral
-Traceback (most recent call last):
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 598, in <module>
-    mission_largage_zone_inconnu(id_to_find)
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 410, in mission_largage_zone_inconnu
-    drone_object.lancement_decollage(5)
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/commande_drone.py", line 159, in lancement_decollage
-    self.arm_and_takeoff(altitudeDeVol)
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/commande_drone.py", line 59, in arm_and_takeoff
-    time.sleep(1)
+  File "/usr/lib/python3/dist-packages/picamera/camera.py", line 1421, in capture
+    if not encoder.wait(self.CAPTURE_TIMEOUT):
+  File "/usr/lib/python3/dist-packages/picamera/encoders.py", line 393, in wait
+    result = self.event.wait(timeout)
+  File "/usr/lib/python3.9/threading.py", line 574, in wait
+    signaled = self._cond.wait(timeout)
+  File "/usr/lib/python3.9/threading.py", line 316, in wait
+    gotit = waiter.acquire(True, timeout)
 KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+
 Traceback (most recent call last):
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 598, in <module>
-    mission_largage_zone_inconnu(id_to_find)
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 436, in mission_largage_zone_inconnu
-    x_centerPixel_target, y_centerPixel_target, aruco_seen, good_aruco_found, white_square_seen, saved_markers = detection_object.Detection_aruco(latitude, longitude, altitudeAuSol, heading, saved_markers, id_to_test, research_whiteSquare)
-UnboundLocalError: local variable 'saved_markers' referenced before assignment
-Traceback (most recent call last):
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 599, in <module>
+  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 603, in <module>
     mission_largage_zone_inconnu(id_to_find)
   File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 441, in mission_largage_zone_inconnu
-    last_errx, last_erry, errsumx, errsumy = asservissement(drone_object, detection_object, last_errx, last_erry, errsumx, errsumy)
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 232, in asservissement
-    dist_center = math.sqrt((detection_object.x_imageCenter-int(last_x_centerPixel_target))**2+(detection_object.y_imageCenter-int(last_y_centerPixel_target))**2)
-TypeError: int() argument must be a string, a bytes-like object or a number, not 'NoneType'
-Traceback (most recent call last):
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 600, in <module>
-    mission_largage_zone_inconnu(id_to_find)
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 442, in mission_largage_zone_inconnu
-    last_errx, last_erry, errsumx, errsumy = asservissement(drone_object, detection_object, last_errx, last_erry, errsumx, errsumy)
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 233, in asservissement
-    dist_center = math.sqrt((detection_object.x_imageCenter-int(last_x_centerPixel_target))**2+(detection_object.y_imageCenter-int(last_y_centerPixel_target))**2)
-TypeError: int() argument must be a string, a bytes-like object or a number, not 'NoneType'
-Traceback (most recent call last):
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 600, in <module>
-    mission_largage_zone_inconnu(id_to_find)
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 442, in mission_largage_zone_inconnu
-    last_errx, last_erry, errsumx, errsumy = asservissement(drone_object, detection_object, last_errx, last_erry, errsumx, errsumy)
-  File "/home/housso97/Desktop/code_IMAV2022_Thomas/main_mission_xxx.py", line 233, in asservissement
-    dist_center = math.sqrt((detection_object.x_imageCenter-int(last_x_centerPixel_target))**2+(detection_object.y_imageCenter-int(last_y_centerPixel_target))**2)
-TypeError: int() argument must be a string, a bytes-like object or a number, not 'NoneType'
+    x_centerPixel_target, y_centerPixel_target, aruco_seen, good_aruco_found, white_square_seen, saved_markers = detection_object.Detection_aruco(latitude, longitude, altitudeAuSol, heading, saved_markers, id_to_test, True)
+  File "/home/housso97/Desktop/code_IMAV2022_Thomas/detection_target.py", line 94, in Detection_aruco
+    self.camera.capture(self.rawCapture, format="bgr")
+  File "/usr/lib/python3/dist-packages/picamera/camera.py", line 1425, in capture
+    encoder.close()
+  File "/usr/lib/python3/dist-packages/picamera/encoders.py", line 431, in close
+    self.stop()
+  File "/usr/lib/python3/dist-packages/picamera/encoders.py", line 419, in stop
+    self._close_output()
+  File "/usr/lib/python3/dist-packages/picamera/encoders.py", line 349, in _close_output
+    mo.close_stream(output, opened)
+  File "/usr/lib/python3/dist-packages/picamera/mmalobj.py", line 371, in close_stream
+    stream.flush()
+  File "/usr/lib/python3/dist-packages/picamera/array.py", line 238, in flush
+    self.array = bytes_to_rgb(self.getvalue(), self.size or self.camera.resolution)
+  File "/usr/lib/python3/dist-packages/picamera/array.py", line 126, in bytes_to_rgb
+    raise PiCameraValueError(
+picamera.exc.PiCameraValueError: Incorrect buffer length for resolution 640x480

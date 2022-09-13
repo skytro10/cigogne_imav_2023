@@ -11,7 +11,7 @@ import cv2.aruco as aruco
 import sys, time
 from math import sqrt
 from dronekit import connect, VehicleMode, LocationGlobalRelative, LocationGlobal
-from pymavlink import mavutil 
+from pymavlink import mavutil
 from array import array
 from datetime import datetime
 from picamera import PiCamera,Color
@@ -27,7 +27,7 @@ class Detection:
     self.white_square_seen = False
 
     #--------------- Counter variables --------------------
-    # self.found_count = 0 
+    # self.found_count = 0
     # self.not_found_count = 0
     
     #--------------- Camera parametres --------------------
@@ -83,7 +83,7 @@ class Detection:
     self.aruco_seen = False
     self.good_aruco_found = False
     self.white_square_seen = False
-    
+    print("Id to test input detection: %s" % id_to_test)
     #print("[visiont] New image. ID to test: %s. Number of saved items: %s." % (id_to_test, len(saved_markers)))
     x_pixel_target_out = None
     y_pixel_target_out = None
@@ -139,7 +139,7 @@ class Detection:
         
       cv2.line(frame, (x_centerPixel_target, y_centerPixel_target-20), (x_centerPixel_target, y_centerPixel_target+20), (0, 0, 255), 2)
       cv2.line(frame, (x_centerPixel_target-20, y_centerPixel_target), (x_centerPixel_target+20, y_centerPixel_target), (0, 0, 255), 2)
-
+      cv2.putText(frame, str(aruco_id)+"a", (int(x_centerPixel_target), int(y_centerPixel_target)), font, 1, (0, 0, 0), 2)
       # Estimating marker location from vision
       distance_vision, angle_vision = get_distance_angle_picture(self.x_imageCenter, self.y_imageCenter,
                                                                  x_centerPixel_target, y_centerPixel_target,
@@ -165,9 +165,11 @@ class Detection:
       #------------- Image processing for white squares -------------
       blur = cv2.GaussianBlur(frame,(5,5),0)       # Gaussian blur filter  
       hls = cv2.cvtColor(blur, cv2.COLOR_BGR2HLS)  # Convert from BGR to HLS color space  
-      lower_bound = (0,200,0)     # Select white color in HLS space
+      lower_bound = (0,220,0)     # Select white color in HLS space
       upper_bound = (255,255,255)
       mask_hls = cv2.inRange(hls, lower_bound, upper_bound)
+      name = "Test_1_Img_" + str(self.img_compteur) + "_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude) + "head_" + str(heading)
+      cv2.imwrite(os.path.join(self.path, "hls_"+name +".png"), mask_hls)
       # Closing detected elements
       closing_kernel = cv2.getStructuringElement(cv2.MORPH_RECT,(7,7))
       mask_closing = cv2.morphologyEx(mask_hls, cv2.MORPH_CLOSE, closing_kernel)
@@ -200,7 +202,6 @@ class Detection:
             # cv2.drawContours(frame, [c], -1, (0, 0, 255), 1)
             x_centerPixel_target = np.mean(c, axis=0)[0][0]
             y_centerPixel_target = np.mean(c, axis=0)[0][1]
-            print(x_centerPixel_target)
             arrete_marker_pxl = sqrt(area)
             
             pixelTest = mask_closing[int(y_centerPixel_target),int(x_centerPixel_target)]
@@ -222,26 +223,30 @@ class Detection:
               estimated_location = get_GPS_location(current_location, heading + angle_vision, distance_vision)
 
               # White square found and compared to dictionary
-              new_location_found = False
+              new_location_found = True
               white_square_id = 0
               for id_markers in saved_markers:
                 saved_location = saved_markers[id_markers][0]
                 distance_meters = get_distance_metres(estimated_location, saved_location)
+                print(distance_meters)
                 # print("distance_meters entre la position du marker teste et l estimation de la nouvelle image : "+str(distance_meters))
 
                 # White square already checked with location fusion
-                if distance_meters < 7:
+                if distance_meters < 5.0:
+                  new_location_found = False
                   white_square_id = id_markers
+                  print("Distance less than 7m")
                   # new_location_found = False
                   if white_square_id == id_to_test:
+                    # print("Pixel target out sent: %s" % white_square_id)
                     x_pixel_target_out = x_centerPixel_target
                     y_pixel_target_out = y_centerPixel_target
 
                   # Location already found
-                else:
-                  new_location_found = True
-                  x_pixel_target_out = x_centerPixel_target
-                  y_pixel_target_out = y_centerPixel_target
+                #else:
+                #  new_location_found = True
+                  # x_pixel_target_out = x_centerPixel_target
+                  # y_pixel_target_out = y_centerPixel_target
 
               # Storing new white squares in dictionary
               if new_location_found:
@@ -254,7 +259,10 @@ class Detection:
                 # self.f.write("[visiont] New location found with id %s." % white_square_id)
                 saved_markers[white_square_id] = (estimated_location, False)
               
-              cv2.putText(frame, str(white_square_id), (int(x_centerPixel_target), int(y_centerPixel_target)), font, 1, (0, 0, 0), 2)
+              if white_square_id > 1000:
+                cv2.putText(frame, str(white_square_id), (int(x_centerPixel_target), int(y_centerPixel_target)), font, 1, (0, 0, 0), 2)
+              else:
+                cv2.putText(frame, str(white_square_id)+"b", (int(x_centerPixel_target), int(y_centerPixel_target)), font, 1, (0, 0, 0), 2)
               
               #cv2.imwrite(os.path.join(self.path, "mask_hls"+name), mask_hls)
               #cv2.imwrite(os.path.join(self.path, "mask_closing"+name), mask_closing)
@@ -273,7 +281,6 @@ class Detection:
     cv2.line(frame, (self.x_imageCenter, self.y_imageCenter-20), (self.x_imageCenter, self.y_imageCenter+20), (255, 0, 0), 2)
     cv2.line(frame, (self.x_imageCenter-20, self.y_imageCenter), (self.x_imageCenter+20, self.y_imageCenter), (255, 0, 0), 2)
     cv2.imwrite(os.path.join(self.path, name+".png"), frame)
-    cv2.imwrite(os.path.join(self.path, "hls_"+name +".png"), mask_hls)
-    print("Image saved !")
+    print("Image saved (%s)!" % self.img_compteur)
     
     return x_pixel_target_out, y_pixel_target_out, self.aruco_seen, self.good_aruco_found, self.white_square_seen, saved_markers
