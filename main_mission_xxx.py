@@ -193,8 +193,6 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
   kix = 0.000001  # 0.0000001
   kiy = 0.000001
  
-  last_x_centerPixel_target = x_centerPixel_target
-  last_y_centerPixel_target = y_centerPixel_target
 
   vx = 0
   vy = 0
@@ -212,7 +210,7 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
     kpy = 0.002
           
           
-  if last_x_centerPixel_target == None or last_y_centerPixel_target == None :   # echec Detection
+  if x_centerPixel_target == None or y_centerPixel_target == None :   # echec Detection
     if counter_no_detect > 5 :   #on fixe le nombre d'image consecutive sans Detection pour considerer qu il ne detecte pas
       if altitudeRelative > 25 :  # si on altitudeRelative sup a 25m stop le thread
         drone_object.set_velocity(0, 0, 0, 1)
@@ -228,57 +226,57 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
       drone_object.set_velocity(0, 0, 0, 1)
       #print ("compteur_no_detect > 2   stabilisation drone")
     
-    else :  # Detection ok
-      print(last_x_centerPixel_target)
-      dist_center = math.sqrt((detection_object.x_imageCenter-int(last_x_centerPixel_target))**2+(detection_object.y_imageCenter-int(last_y_centerPixel_target))**2)
-      errx = detection_object.x_imageCenter - last_x_centerPixel_target
-      erry = detection_object.y_imageCenter - last_y_centerPixel_target
-      if abs(errx) <= 10:   #marge de 10pxl pour considerer que la cible est au centre de l image
-        errx = 0
-      if abs(erry) <= 10:
-        erry = 0
-          
-      # PD control
-      dErrx = (errx - last_errx)# / delta_time
-      dErry = (erry - last_erry)# / delta_time
-      errsumx += errx# * delta_time
-      errsumy += erry# * delta_time
+  else :  # Detection ok
+    
+    dist_center = math.sqrt((detection_object.x_imageCenter-int(x_centerPixel_target))**2+(detection_object.y_imageCenter-int(y_centerPixel_target))**2)
+    errx = detection_object.x_imageCenter - x_centerPixel_target
+    erry = detection_object.y_imageCenter - y_centerPixel_target
+    if abs(errx) <= 10:   #marge de 10pxl pour considerer que la cible est au centre de l image
+      errx = 0
+    if abs(erry) <= 10:
+      erry = 0
         
-      #~ print("errsumx: %s, errsumy: %s" % (errsumy, errsumy))
-      vx = (kpx * errx) + (kdx * dErrx) + (kix * errsumx)
-      vy = (kpy * erry) + (kdy * dErry) + (kiy * errsumy)
+    # PD control
+    dErrx = (errx - last_errx)# / delta_time
+    dErry = (erry - last_erry)# / delta_time
+    errsumx += errx# * delta_time
+    errsumy += erry# * delta_time
       
-      if altitudeAuSol < 3 :
-        vz = 0.2  # a changer pour descendre
-      elif altitudeAuSol > 7 :
-        vz = 1  # a changer pour descendre
-      else :
-        vz = 0.5
-        # Establish limit to outputs
-        vx = min(max(vx, -5.0), 5.0)
-        vy = min(max(vy, -5.0), 5.0)
-        vx = -vx                        # High opencv is south Dronekit
-        
-      # Dronekit
-      # X positive Forward / North
-      # Y positive Right / East
-      # Z positive down
+    #~ print("errsumx: %s, errsumy: %s" % (errsumy, errsumy))
+    vx = (kpx * errx) + (kdx * dErrx) + (kix * errsumx)
+    vy = (kpy * erry) + (kdy * dErry) + (kiy * errsumy)
+    
+    if altitudeAuSol < 3 :
+      vz = 0.2  # a changer pour descendre
+    elif altitudeAuSol > 7 :
+      vz = 1  # a changer pour descendre
+    else :
+      vz = 0.5
+      # Establish limit to outputs
+      vx = min(max(vx, -5.0), 5.0)
+      vy = min(max(vy, -5.0), 5.0)
+      vx = -vx                        # High opencv is south Dronekit
       
-      if altitudeAuSol < 2 :
-        dist_center_threshold = 50
-      
-      else :
-        dist_center_threshold = 100
+    # Dronekit
+    # X positive Forward / North
+    # Y positive Right / East
+    # Z positive down
+    
+    if altitudeAuSol < 2 :
+      dist_center_threshold = 50
+    
+    else :
+      dist_center_threshold = 100
 
-      if dist_center <= dist_center_threshold :
-        drone_object.set_velocity(vy, vx, vz, 1) 
-        #print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center <= 30"
-      
-      else :
-        #lancer un deplacement pour ce rapprocher du centre sans descendre ou monter
-        vz = 0
-        drone_object.set_velocity(vy, vx, vz, 1)  # Pour le sense de la camera, X controle le 'east' et Y controle le 'North'
-        #print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center decale")
+    if dist_center <= dist_center_threshold :
+      drone_object.set_velocity(vy, vx, vz, 1) 
+      #print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center <= 30"
+    
+    else :
+      #lancer un deplacement pour ce rapprocher du centre sans descendre ou monter
+      vz = 0
+      drone_object.set_velocity(vy, vx, vz, 1)  # Pour le sense de la camera, X controle le 'east' et Y controle le 'North'
+      #print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center decale")
 
   # Return last errors and sums for derivative and integrator terms
   return errx, erry, errsumx, errsumy
