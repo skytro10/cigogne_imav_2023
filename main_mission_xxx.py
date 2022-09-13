@@ -202,8 +202,8 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
   # print("ASERVISSEMENT !!!!!!!!!!!!!!!!!!")
              
   if altitudeAuSol < 5 :
-    kpx = 0.002
-    kpy = 0.002
+    kpx = 0.003
+    kpy = 0.003
     #kix = 0.000001  # 0.0000001
     #kiy = 0.000001
   else :
@@ -258,16 +258,18 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
     vy = (kpy * erry) + (kdy * dErry) + (kiy * errsumy)
     
     if altitudeAuSol < 3 :
-      vz = 0.2  # a changer pour descendre
-    elif altitudeAuSol > 7 :
+      vz = 0.1  # a changer pour descendre
+    elif altitudeAuSol > 9 :
       vz = 1  # a changer pour descendre
-    else :
+    elif altitudeAuSol > 5:
       vz = 0.5
+    else:
+      vz = 0.25
       # Establish limit to outputs
       vx = min(max(vx, -5.0), 5.0)
       vy = min(max(vy, -5.0), 5.0)
       vx = -vx                        # High opencv is south Dronekit
-      vy = -vy
+      # vy = -vy
       
     # Dronekit
     # X positive Forward / North
@@ -490,9 +492,10 @@ def mission_largage_zone_inconnu(id_to_find):
       for saved_id in saved_markers :
         # Check boolean: if False, needs to be explored
         if saved_markers[saved_id][1] == False:
+          # if saved_id > 1001 and saved_markers[saved_id-1][1] == False:
+          #  saved_markers[saved_id-1].pop()
           id_to_test = saved_id
           print("[mission] Detection targetted towards id %s" % id_to_test)
-          break
 
     #--------------- Case 3: ArUco tag seen but id false ---------------
     elif aruco_seen:

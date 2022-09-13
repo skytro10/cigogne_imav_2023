@@ -165,7 +165,7 @@ class Detection:
       #------------- Image processing for white squares -------------
       blur = cv2.GaussianBlur(frame,(5,5),0)       # Gaussian blur filter  
       hls = cv2.cvtColor(blur, cv2.COLOR_BGR2HLS)  # Convert from BGR to HLS color space  
-      lower_bound = (0,220,0)     # Select white color in HLS space
+      lower_bound = (0,230,0)     # Select white color in HLS space
       upper_bound = (255,255,255)
       mask_hls = cv2.inRange(hls, lower_bound, upper_bound)
       name = "Test_1_Img_" + str(self.img_compteur) + "_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude) + "head_" + str(heading)
@@ -235,7 +235,7 @@ class Detection:
                 if distance_meters < 5.0:
                   new_location_found = False
                   white_square_id = id_markers
-                  print("Distance less than 7m")
+                  # print("Distance less than 3m")
                   # new_location_found = False
                   if white_square_id == id_to_test:
                     # print("Pixel target out sent: %s" % white_square_id)
