@@ -195,7 +195,7 @@ class Detection:
           print("[visiont] WARNING! Null altitude null sent by rangefinder.")
           # self.f.write("[visiont] WARNING! Null altitude null sent by rangefinder.")
           break
-        if area < 60000*altitude**-2  and area > 10000*altitude**-2 and len(approx) ==4 and altitude > 5:
+        if area < 60000*altitude**-2  and area > 10000*altitude**-2 and len(approx) ==4 and altitude > 3:
           # print("Detection area correspondant")
           (x, y, w, h) = cv2.boundingRect(approx)
           ar = w / float(h)

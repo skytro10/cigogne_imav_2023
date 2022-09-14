@@ -281,7 +281,7 @@ def mission_largage(id_to_find):
 
       elapsed_time = time.time() - start_time
       # Conditions pour faire le largage
-      if (dist_center <= 75 and altitudeAuSol < 1.5) or elapsed_time > 30: 
+      if (dist_center <= 100 and altitudeAuSol < 2) or elapsed_time > 30: 
         print("[mission] Largage !")
         drone_object.move_servo(10, True)
         time.sleep(0.5)

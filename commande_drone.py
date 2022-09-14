@@ -74,10 +74,10 @@ class Drone:
     # Servo largage
     if channel == 10:
       if ouvert:
-        pwm = 1100
+        pwm = 1900
         print("Opening servo")
       else:
-        pwm = 1900
+        pwm = 1100
         print("Closing servo")
         
     # Servo enrouleur
