@@ -261,15 +261,16 @@ class Detection:
                 print("[visiont] New location found with id %s." % white_square_id)
                 # self.f.write("[visiont] New location found with id %s." % white_square_id)
                 saved_markers[white_square_id] = (estimated_location, False)
-              
+
               if white_square_id > 1000:
                 cv2.putText(frame, str(white_square_id), (int(x_centerPixel_target), int(y_centerPixel_target)), font, 1, (0, 0, 0), 2)
               else:
+                self.white_square_seen = False
                 cv2.putText(frame, str(white_square_id)+"b", (int(x_centerPixel_target), int(y_centerPixel_target)), font, 1, (0, 0, 0), 2)
-              
+
               #cv2.imwrite(os.path.join(self.path, "mask_hls"+name), mask_hls)
               #cv2.imwrite(os.path.join(self.path, "mask_closing"+name), mask_closing)
-              
+
     if self.aruco_seen == False and self.white_square_seen == False:
       # self.not_found_count += 1
       x_pixel_target_out = None
@@ -279,7 +280,7 @@ class Detection:
       # print("notfound_count : "+str(self.notfound_count))
     else:
       name = "Test_1_Img_" + str(self.img_compteur) + "_yes_lat_" + str(latitude)+ "lon_" + str(longitude) + "alt_" + str(altitude) + "head_" + str(heading)
-        
+
     cv2.circle(frame, (320, 240), 75, (255,255,255), 1)
     cv2.line(frame, (self.x_imageCenter, self.y_imageCenter-20), (self.x_imageCenter, self.y_imageCenter+20), (255, 0, 0), 2)
     cv2.line(frame, (self.x_imageCenter-20, self.y_imageCenter), (self.x_imageCenter+20, self.y_imageCenter), (255, 0, 0), 2)

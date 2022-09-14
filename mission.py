@@ -242,7 +242,7 @@ def mission_largage(drone_name, id_to_find, truck):
   drone_object.passage_mode_Auto()
   
   # a partir d'un certain waypoint declencher le thread de detection
-  while drone_object.vehicle.commands.next <= 2 :
+  while drone_object.vehicle.commands.next < 2:
     pass
 
   while (drone_object.get_mode() == "GUIDED" or drone_object.get_mode() == "AUTO") or not package_dropped:
