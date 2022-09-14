@@ -235,7 +235,7 @@ class Detection:
                 # print("distance_meters entre la position du marker teste et l estimation de la nouvelle image : "+str(distance_meters))
 
                 # White square already checked with location fusion
-                if distance_meters < 5.0:
+                if distance_meters < 10:
                   new_location_found = False
                   white_square_id = id_markers
                   # print("Distance less than 3m")

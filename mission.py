@@ -236,7 +236,7 @@ def mission_largage(drone_name, id_to_find, truck):
   detection_object = Detection(PiCamera(), id_to_find)  # creer l objet detection
   #########verrouillage servomoteur et procedure arm and takeoff
   print("[mission] Launching and take off routine...")
-  drone_object.lancement_decollage(5)
+  drone_object.lancement_decollage(5, drone_name)
 
   #########passage en mode AUTO et debut de la mission
   drone_object.passage_mode_Auto()
@@ -372,7 +372,7 @@ def mission_largage(drone_name, id_to_find, truck):
 #--------------------------------------------------------------
 
 #--------------------------------------------------------------
-def mission_silent():
+def mission_silent(drone_name):
   # Boolean variables
   global aruco_seen
   global good_aruco_found
@@ -401,7 +401,7 @@ def mission_silent():
   detection_object = Detection(PiCamera(), id_to_find)  # creer l objet detection
   #########verrouillage servomoteur et procedure arm and takeoff
   print("[mission] Launching and take off routine...")
-  drone_object.lancement_decollage(5)
+  drone_object.lancement_decollage(5, drone_name)
 
   #########passage en mode AUTO et debut de la mission
   drone_object.passage_mode_Auto()
@@ -447,8 +447,8 @@ def mission_silent():
 
       if counter_something > 5:
         print("[mission] Début du largage !")
-        drone_object.move_servo(10, True)
-        drone_object.move_servo(9, True)
+        drone_object.move_servo(10, True, drone_name)
+        drone_object.move_servo(9, True, drone_name)
 
       elapsed_time = time.time() - start_time
       # Conditions pour faire le RTL
@@ -510,15 +510,15 @@ def mission_silent():
 if __name__ == "__main__":
 
   # Mission de largage classique
-  if len(sys.argv) > 3 and drone_name in ["futuna", "spacex", "walle"]:
-    drone_name = str(sys.argv[1])
-    id_to_find = int(sys.argv[2])
+  drone_name = str(sys.argv[1])
+  id_to_find = int(sys.argv[2])
+  if len(sys.argv) >= 3 and drone_name in ["futuna", "spacex", "walle"]:
     mission_largage(drone_name, id_to_find, False)
     # print("Mission largage")
     if len(sys.argv) == 4:
       if sys.argv[3] == "silent":
         # Mission de largage silencieuse
-        mission_silent()
+        mission_silent(drone_name)
         # print("Mission silent")
       elif sys.argv[3] == "truck":
         # Mission de largage sur camion

@@ -165,11 +165,11 @@ class Drone:
         break  # Then break the waiting loop
       time.sleep(1)
 
-  def lancement_decollage(self, altitudeDeVol):
+  def lancement_decollage(self, altitudeDeVol, drone_name):
     #Initialisaion du programme en mode stabilize
     self.vehicle.mode = VehicleMode("STABILIZE")
     #verrouillage servomoteur de larguage
-    self.move_servo(10, False)
+    self.move_servo(10, False, drone_name)
     while True:
       print ("[mission] Current mode: %s. Waiting for AUTO mode." % self.vehicle.mode)
       if (self.vehicle.mode == VehicleMode("AUTO")):
