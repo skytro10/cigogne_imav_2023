@@ -70,43 +70,35 @@ class Drone:
             break
         time.sleep(1)
   
-  def move_servo_largage(self, channel, ouvert, duration=1):
-    if ouvert:
-      pwm = 1100
-      print("Opening servo")
-    else:
-      pwm = 1900
-      print("Closing servo")
+  def move_servo(self, channel, ouvert, duration=1):
+    # Servo largage
+    if channel == 10:
+      if ouvert:
+        pwm = 1100
+        print("Opening servo")
+      else:
+        pwm = 1900
+        print("Closing servo")
+        
+    # Servo enrouleur
+    if channel == 9:
+      if ouvert:  # Descente
+        pwm = 1450
+        print("Opening servo")
+      else:       # Maintien
+        pwm = 1500
+        print("Closing servo")
+
     msg = self.vehicle.message_factory.command_long_encode(0, 0,  # target_system, target_component
                                                       mavutil.mavlink.MAV_CMD_DO_SET_SERVO,  # command
                                                       0,  # confirmation
                                                       channel,  # servo number
                                                       pwm,  # servo position between 1000 ferme and 2000
                                                       0, 0, 0, 0, 0)  # param 3 ~ 7 not used
-      # send command to vehicle
+    # send command to vehicle
     for x in range(0,duration) :		
       self.vehicle.send_mavlink(msg)
       time.sleep(0.2)
-
-  # TODO Faire message servo enrouleur
-  def move_servo_enrouleur(self, channel, ouvert, duration=1):
-      if ouvert:
-          pwm = 1100
-          print("Opening servo")
-      else:
-          pwm = 1900
-          print("Closing servo")
-      msg = self.vehicle.message_factory.command_long_encode(0, 0,  # target_system, target_component
-                                                      mavutil.mavlink.MAV_CMD_DO_SET_SERVO,  # command
-                                                      0,  # confirmation
-                                                      channel,  # servo number
-                                                      pwm,  # servo position between 1000 ferme and 2000
-                                                      0, 0, 0, 0, 0)  # param 3 ~ 7 not used
-      # send command to vehicle
-      for x in range(0,duration) :
-  		
-          self.vehicle.send_mavlink(msg)
-          time.sleep(0.2)
   
   #set_mode - set the mode of the vehicle as long as we are in control
   def set_mode(self, mode):
