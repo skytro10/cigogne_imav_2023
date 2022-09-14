@@ -207,7 +207,7 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
   return errx, erry, errsumx, errsumy
   
 #--------------------------------------------------------------
-def mission_largage(id_to_find):
+def mission_largage(drone_name, id_to_find, truck):
   # Boolean variables
   global aruco_seen
   global good_aruco_found
@@ -236,7 +236,7 @@ def mission_largage(id_to_find):
   detection_object = Detection(PiCamera(), id_to_find)  # creer l objet detection
   #########verrouillage servomoteur et procedure arm and takeoff
   print("[mission] Launching and take off routine...")
-  drone_object.lancement_decollage(5)
+  drone_object.lancement_decollage(5, drone_name)
 
   #########passage en mode AUTO et debut de la mission
   drone_object.passage_mode_Auto()
@@ -281,9 +281,13 @@ def mission_largage(id_to_find):
 
       elapsed_time = time.time() - start_time
       # Conditions pour faire le largage
-      if (dist_center <= 75 and altitudeAuSol < 1.5) or elapsed_time > 30: 
+      if truck:
+        altitude_condition = 3.0
+      else:
+        altitude_condition = 2
+      if (dist_center <= 100 and altitudeAuSol < altitude_condition) or elapsed_time > 30: 
         print("[mission] Largage !")
-        drone_object.move_servo(10, True)
+        drone_object.move_servo(10, True, drone_name)
         time.sleep(0.5)
         package_dropped = True
         break
@@ -368,7 +372,7 @@ def mission_largage(id_to_find):
 #--------------------------------------------------------------
 
 #--------------------------------------------------------------
-def mission_silent():
+def mission_silent(drone_name):
   # Boolean variables
   global aruco_seen
   global good_aruco_found
@@ -397,7 +401,7 @@ def mission_silent():
   detection_object = Detection(PiCamera(), id_to_find)  # creer l objet detection
   #########verrouillage servomoteur et procedure arm and takeoff
   print("[mission] Launching and take off routine...")
-  drone_object.lancement_decollage(5)
+  drone_object.lancement_decollage(5, drone_name)
 
   #########passage en mode AUTO et debut de la mission
   drone_object.passage_mode_Auto()
@@ -443,8 +447,8 @@ def mission_silent():
 
       if counter_something > 5:
         print("[mission] Début du largage !")
-        drone_object.move_servo(10, True)
-        drone_object.move_servo(9, True)
+        drone_object.move_servo(10, True, drone_name)
+        drone_object.move_servo(9, True, drone_name)
 
       elapsed_time = time.time() - start_time
       # Conditions pour faire le RTL
@@ -506,18 +510,22 @@ def mission_silent():
 if __name__ == "__main__":
 
   # Mission de largage classique
-  if len(sys.argv) > 1:
-    id_to_find = int(sys.argv[1])
-    mission_largage(id_to_find)
+  drone_name = str(sys.argv[1])
+  id_to_find = int(sys.argv[2])
+  if len(sys.argv) >= 3 and drone_name in ["futuna", "spacex", "walle"]:
+    mission_largage(drone_name, id_to_find, False)
     # print("Mission largage")
-    
-  # Mission de largage silencieuse
-  elif len(sys.argv) > 2 and sys.argv[2] == "silent":
-    mission_silent()
-    # print("Mission silent")
+    if len(sys.argv) == 4:
+      if sys.argv[3] == "silent":
+        # Mission de largage silencieuse
+        mission_silent(drone_name)
+        # print("Mission silent")
+      elif sys.argv[3] == "truck":
+        # Mission de largage sur camion
+        mission_largage(drone_name, id_to_find, True)
 
   # Erreur dans la saisie des arguments
   else:
-    print("Please specify an ArUco id argument, and the silent keyword if necessary.")
+    print("Please specify: \n * a valid drone name \n * an ArUco id argument \n * a mission keyword if necessary (silent or truck)")
     
   print ("End of code")
