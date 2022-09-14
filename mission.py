@@ -193,7 +193,7 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
     else :
       dist_center_threshold = 1000
 
-    if dist_center <= dist_center_threshold and not silent_case:
+    if dist_center <= dist_center_threshold :
       drone_object.set_velocity(vy, vx, vz, 1) 
       #print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center <= 30"
     
@@ -202,7 +202,10 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
       vz = 0
       drone_object.set_velocity(vy, vx, vz, 1)  # Pour le sense de la camera, X controle le 'east' et Y controle le 'North'
       #print("vy : "+str(vy)+" vx : "+str(vx)+" vz : "+str(vz)+" dist_center decale")
-
+      
+    if silent_case :
+      vz = 0
+      drone_object.set_velocity(vy, vx, vz, 1)  # Pour le sense de la camera, X controle le 'east' et Y controle le 'North'
   # Return last errors and sums for derivative and integrator terms
   return errx, erry, errsumx, errsumy
   
