@@ -442,14 +442,14 @@ def mission_silent():
       print("[mission] Current distance: %.2fpx ; Altitude: %.2fm." % (dist_center, altitudeAuSol))
 
       if counter_something > 5:
+        print("[mission] Début du largage !")
+        drone_object.move_servo(10, True)
         drone_object.move_servo(9, True)
 
       elapsed_time = time.time() - start_time
-      # Conditions pour faire le largage
-      if elapsed_time > 90: 
-        print("[mission] Largage !")
-        drone_object.move_servo(10, True)
-        time.sleep(0.5)
+      # Conditions pour faire le RTL
+      if elapsed_time > 90:
+        print("[mission] Fin du largage !")
         package_dropped = True
         break
 
