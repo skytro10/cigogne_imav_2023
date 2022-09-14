@@ -87,7 +87,7 @@ redir=RedirectText(log)
 # sys.stdout=redir
 # sys.stderr=redir
 
-def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx, errsumy, silent_case):
+def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx, errsumy, silent_case, truck_case):
   # Boolean variables
   global aruco_seen
   global good_aruco_found
@@ -114,11 +114,11 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
   vx = 0
   vy = 0
   vz = 0
-  
+
   if altitudeAuSol < 5 :
     kpx = 0.003
     kpy = 0.003
-  else :
+  else:
     kpx = 0.005
     kpy = 0.005
 
@@ -206,6 +206,12 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
     if silent_case :
       vz = 0
       drone_object.set_velocity(vy, vx, vz, 1)  # Pour le sense de la camera, X controle le 'east' et Y controle le 'North'
+
+    if truck_case :
+      vz = vz/2
+      drone_object.set_velocity(vy, vx, vz, 1)  # Pour le sense de la camera, X controle le 'east' et Y controle le 'North'
+
+      
   # Return last errors and sums for derivative and integrator terms
   return errx, erry, errsumx, errsumy
   
@@ -260,7 +266,7 @@ def mission_largage(drone_name, id_to_find, truck):
     x_centerPixel_target, y_centerPixel_target, aruco_seen, good_aruco_found, white_square_seen, saved_markers = detection_object.Detection_aruco(latitude, longitude, altitudeAuSol, heading, saved_markers, id_to_test, True)
     # Asservissement control
     if drone_object.get_mode() == "GUIDED" :
-      last_errx, last_erry, errsumx, errsumy = asservissement(drone_object, detection_object, last_errx, last_erry, errsumx, errsumy, False)
+      last_errx, last_erry, errsumx, errsumy = asservissement(drone_object, detection_object, last_errx, last_erry, errsumx, errsumy, False, truck)
     
     if not drone_object.get_mode() == "GUIDED" and not drone_object.get_mode() == "AUTO":
       break
@@ -285,10 +291,10 @@ def mission_largage(drone_name, id_to_find, truck):
       elapsed_time = time.time() - start_time
       # Conditions pour faire le largage
       if truck:
-        altitude_condition = 3.0
+        dist_condition = 100
       else:
-        altitude_condition = 2
-      if (dist_center <= 100 and altitudeAuSol < altitude_condition) or elapsed_time > 30: 
+        dist_condition = 200
+      if (dist_center <= dist_condition and altitudeAuSol < 2.0) or elapsed_time > 30: 
         print("[mission] Largage !")
         drone_object.move_servo(10, True, drone_name)
         time.sleep(0.5)
