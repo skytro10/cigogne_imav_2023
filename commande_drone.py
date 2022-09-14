@@ -70,7 +70,26 @@ class Drone:
             break
         time.sleep(1)
   
-  def move_servo(self, channel, ouvert, duration=1):
+  def move_servo_largage(self, channel, ouvert, duration=1):
+    if ouvert:
+      pwm = 1100
+      print("Opening servo")
+    else:
+      pwm = 1900
+      print("Closing servo")
+    msg = self.vehicle.message_factory.command_long_encode(0, 0,  # target_system, target_component
+                                                      mavutil.mavlink.MAV_CMD_DO_SET_SERVO,  # command
+                                                      0,  # confirmation
+                                                      channel,  # servo number
+                                                      pwm,  # servo position between 1000 ferme and 2000
+                                                      0, 0, 0, 0, 0)  # param 3 ~ 7 not used
+      # send command to vehicle
+    for x in range(0,duration) :		
+      self.vehicle.send_mavlink(msg)
+      time.sleep(0.2)
+
+  # TODO Faire message servo enrouleur
+  def move_servo_enrouleur(self, channel, ouvert, duration=1):
       if ouvert:
           pwm = 1100
           print("Opening servo")
@@ -283,111 +302,3 @@ class Drone:
     
     # Set mode to AUTO to start mission
     self.vehicle.mode = VehicleMode("AUTO")
-    # print("mode AUTO")
-
-
-  def fence_enable(self, enabled):
-    msg = self.vehicle.message_factory.command_long_encode(
-      0,          # target_system
-      0,          # target_component
-      mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE, #command
-      0,          # confirmation
-      enabled,    # param 1 enabled 1, disable 0
-      0,0,0,0,0,0 # param 2 ~ 7
-    )
-    # send command to vehicle
-    print("Sending fence enable %s ..." % enabled)
-    self.vehicle.send_mavlink(msg)
-    
-
-  def on_status_message(self, vehi, msg_name, msg):
-    print("%s %s" % (msg_name, msg))
-    
-    
-  def on_fence_status(self, vehi, msg_name, msg):
-    if msg.breach_status == 1:
-      print("%s %s" % (msg_name, msg))
-      
-
-  def on_fence_point(self, vehi, msg_name, msg):
-    if self.is_listing_fence:
-      '''is listing fence points'''
-      print("Listing %s" % (msg))
-      self.fenceloader.add(msg)
-    else:
-      '''is sending fence points'''
-      print("Sending %s" % (msg))
-      self.sending_fence_point = msg
-      if self.sending_fence_point is None:
-        print("Failed to send fence point %s" % msg)
-      elif (self.current_fence_point.idx != self.sending_fence_point.idx or 
-            abs(self.current_fence_point.lat - self.sending_fence_point.lat) >= 0.00003 or 
-            abs(self.current_fence_point.lng - self.sending_fence_point.lng) >= 0.00003):
-        print("Failed to send fence point %u" % msg)
-
-
-  def fetch_fence_point(self, i):
-    '''fetch one fence point'''
-    self.vehicle._master.mav.fence_fetch_point_send( 0,0, i )
-    tstart = time.time()
-    while time.time() - tstart < 1:
-      time.sleep(0.1)
-      continue
-    
-
-  def list_fence(self):
-    self.is_listing_fence = True
-    count = int( self.vehicle.parameters["FENCE_TOTAL"] )
-    if count == 0:
-      print("No geo-fence points")
-      return
-    for i in range(count):
-      self.fetch_fence_point(i)
-      
-    
-  def load_fence(self):
-    self.fenceloader.target_system = 0
-    self.fenceloader.target_component = 0
-    self.fenceloader.clear()
-    
-    # test datasets, geofence coordinates
-    x = '[ { "lat": 52.1734217, "lng": 4.4162303 }, { "lat": 52.1736158, "lng": 4.4168525}, { "lat": 52.1732803, "lng": 4.4175714 }, { "lat": 52.1730204, "lng": 4.4161927 }]'
-    
-    fence = json.loads(x)
-    
-    for i in range(len(fence)):
-      point = fence[i]
-      lat = point["lat"]
-      lng = point["lng"]
-      self.fenceloader.add_latlon(lat, lng)
-      print("Loading point lat=%s lng=%s" % (lat, lng))
-    
-      self.send_fence()
-      
-
-  def send_fence(self):
-    self.is_listing_fence = False 
-    '''send fence points from fenceloader'''
-    
-    # must disable geo-fencing when loading
-    self.fenceloader.target_system = 0
-    self.fenceloader.target_component = 0
-    self.fenceloader.reindex()
-    
-    self.vehicle.parameters["FENCE_ACTION"] = mavutil.mavlink.FENCE_ACTION_RTL # your action here
-    print(self.vehicle.parameters["FENCE_ACTION"])
-    self.vehicle.parameters["FENCE_TOTAL" ] = self.fenceloader.count()
-    print(self.fenceloader.count())
-    
-    for i in range(self.fenceloader.count()):
-      self.current_fence_point = self.fenceloader.point(i)
-      self.vehicle._master.mav.send( self.current_fence_point )
-      self.fetch_fence_point(i)
-      
-
-  def clear_fence(self):
-    self.vehicle.parameters["FENCE_TOTAL" ] = 0
-
- #  @self.vehicle.on_message('FENCE_STATUS')
- # def listener(self, name, message):
- #   print(message)

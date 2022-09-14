@@ -79,6 +79,9 @@ class Detection:
     # self.saved_markers = {-1: (LocationGlobalRelative(48.58111,7.764722,0), False)}
 
   def Detection_aruco(self, latitude, longitude, altitude, heading, saved_markers, id_to_test, research_whiteSquare):
+    # Start time to measure image processing delay
+    start_time = time.time()
+    
     # Boolean variables reset
     self.aruco_seen = False
     self.good_aruco_found = False
@@ -280,7 +283,11 @@ class Detection:
     cv2.circle(frame, (320, 240), 75, (255,255,255), 1)
     cv2.line(frame, (self.x_imageCenter, self.y_imageCenter-20), (self.x_imageCenter, self.y_imageCenter+20), (255, 0, 0), 2)
     cv2.line(frame, (self.x_imageCenter-20, self.y_imageCenter), (self.x_imageCenter+20, self.y_imageCenter), (255, 0, 0), 2)
-    cv2.imwrite(os.path.join(self.path, name+".png"), frame)
+    
+    # End time to measure image processing delay
+    end_time = time.time()
+    delay = end_time - start_time
+    cv2.imwrite(os.path.join(self.path, name+"delay_"+str(delay)+".png"), frame)
     print("Image saved (%s)!" % self.img_compteur)
     
     return x_pixel_target_out, y_pixel_target_out, self.aruco_seen, self.good_aruco_found, self.white_square_seen, saved_markers

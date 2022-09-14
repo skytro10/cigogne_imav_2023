@@ -27,7 +27,6 @@ from detection_target import Detection
 from commande_drone import Drone
 import sys
 
-
 #--------------------- Parametres du vehicule ----------------------------
 vitesse = .3 #m/s
 altitudeDeVol = 15
@@ -36,20 +35,22 @@ altitudeDeVol = 15
 research_whiteSquare = True
 distanceAccuracy = 2 # rayon en metre pour valider un goto
 
+# Boolean variables
 global aruco_seen
 global good_aruco_found
 global white_square_seen
+
+# Counter variables
+global counter_no_detect
+counter_no_detect = 0
+global counter_white_square
+counter_white_square = 0
+
 global id_to_test
 id_to_test = -1
 global saved_markers
 saved_markers = {-1: (LocationGlobalRelative(52.1715877,4.4169307,0), True)}
 
-
-# setup variable global pour les threads
-global counter_no_detect
-counter_no_detect = 0
-global counter_white_square
-counter_white_square = 0
 # global compteur_aruco
 # compteur_aruco = 0
 global package_dropped
@@ -205,7 +206,7 @@ def asservissement(drone_object, detection_object, last_errx, last_erry, errsumx
   return errx, erry, errsumx, errsumy
   
 #--------------------------------------------------------------
-def mission_largage_zone_inconnu(id_to_find):
+def mission_largage(id_to_find):
   # Boolean variables
   global aruco_seen
   global good_aruco_found
@@ -222,6 +223,7 @@ def mission_largage_zone_inconnu(id_to_find):
   global saved_markers
 
   id_to_test = -1
+  first_time_aruco_found = True
   
   last_errx = 0
   last_erry = 0
@@ -264,6 +266,10 @@ def mission_largage_zone_inconnu(id_to_find):
     if good_aruco_found:
       print("[detection] Case 1: Good ArUco ID found!")
 
+      if first_time_aruco_found:
+        first_time_aruco_found = False
+        start_time = time.time()
+      
       counter_no_detect = 0
 
       while drone_object.get_mode() != "GUIDED":
@@ -273,9 +279,11 @@ def mission_largage_zone_inconnu(id_to_find):
       dist_center = math.sqrt((detection_object.x_imageCenter-x_centerPixel_target)**2+(detection_object.y_imageCenter-y_centerPixel_target)**2)
       print("[mission] Current distance: %.2fpx ; Altitude: %.2fm." % (dist_center, altitudeAuSol))
 
-      if dist_center <= 75 and altitudeAuSol < 1.5:  # condition pour faire le largage
+      elapsed_time = time.time() - start_time
+      # Conditions pour faire le largage
+      if (dist_center <= 75 and altitudeAuSol < 1.5) or elapsed_time > 30: 
         print("[mission] Largage !")
-        drone_object.move_servo(10, True)
+        drone_object.move_servo_largage(10, True)
         time.sleep(0.5)
         package_dropped = True
         break
@@ -345,48 +353,18 @@ def mission_largage_zone_inconnu(id_to_find):
           saved_markers[id_to_test] = (saved_markers[id_to_test][0], True)
           id_to_test = -1
 
+  # Geofencing security, shutdown motors, VERY DANGEROUS!!!
+  # if drone_object.get_mode() == "BRAKE":
+  #   # print("Enter BRAKE mode")
+  #   msg= drone_object.vehicle.message_factory.command_long_encode(
+  #     # time_boot_ms (not used)
+  #     0, 0,  # target system, target component
+  #     mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION,  # frame
+  #     0, 1, 0, 0, 0, 0, 0, 0)
+
   if drone_object.get_mode() == "GUIDED" or drone_object.get_mode() == "AUTO":  #securite pour ne pas que le drone reprenne la main en cas d interruption
     #########repart en mode RTL
     drone_object.set_mode("RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
-#--------------------------------------------------------------
-
-#--------------------------------------------------------------
-"""
-def mission_largage_GPS_silent(GPS_target_delivery, id_to_find):
-
-  drone_object = Drone()    #permet de connecter le drone via dronekit en creant l objet drone
-  detection_object = Detection(PiCamera(), id_to_find)  # creer l objet detection
-  #########verrouillage servomoteur et procedure arm and takeoff
-  drone_object.lancement_decollage(altitudeDeVol)
-  #########Drone se deplace sur cible
-  drone_object.goto(GPS_target_delivery, distanceAccuracy)
-  
-  
-  #Drone.move_servo(vehicle,10, False)
-  #########Create new threads
-  myThread_Detection_target= myThread(1, "Thread_Detection_target",altitudeDeVol,None,research_whiteSquare)
-  myThread_asservissement= myThread(2, "Thread_asservissement",altitudeDeVol,drone_object,research_whiteSquare)  
-
-  #########debut de la Detection et du mouvement
-  myThread_Detection_target.start()
-  time.sleep(1)
-  myThread_asservissement.start()
-  
-  # Ensure to stop a thread if the other is stopped
-  # https://stackoverflow.com/questions/323972/is-there-any-way-to-kill-a-thread
-  while not myThread_Detection_target.stopped() and not myThread_asservissement.stopped():
-    if myThread_Detection_target.stopped():
-      myThread_asservissement.stop()
-    if myThread_asservissement.stopped():
-      myThread_Detection_target.stop()
-
-  #########attente de la fin de la Detection et du mouvement
-  myThread_Detection_target.join()
-  myThread_asservissement.join()
-  if drone_object.get_mode() == "GUIDED" or drone_object.get_mode() == "AUTO") :  #securite pour ne pas que le drone reprenne la main en cas d interruption
-    #########repart en mode RTL
-    drone_object.set_mode("RTL") #### modif preciser qu on est en guided avant et ajouter l altitude du RTL
-  """
 #--------------------------------------------------------------
 
 if __name__ == "__main__":
@@ -400,7 +378,7 @@ if __name__ == "__main__":
   # mission_largage_GPS_incertain(GPS_target_delivery, id_to_find)
 
   # Mission 3: Delivery at unknown location 
-  mission_largage_zone_inconnu(id_to_find)
+  mission_largage(id_to_find)
 
   # Mission 4: Silent Delivery
   # mission_largage_GPS_silent(GPS_target_delivery, id_to_find)
@@ -408,4 +386,4 @@ if __name__ == "__main__":
   # Mission 5: Delivery on a moving pickup truck
   # Mission 6: Delivery far and fast
   
-  print ("fin du code")
+  print ("End of code")
