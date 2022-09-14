@@ -70,14 +70,20 @@ class Drone:
             break
         time.sleep(1)
   
-  def move_servo(self, channel, ouvert, duration=1):
+  def move_servo(self, channel, ouvert, drone_name, duration=1):
     # Servo largage
     if channel == 10:
       if ouvert:
-        pwm = 1900
+        if drone_name == "futuna":
+          pwm = 1100
+        else:
+          pwm = 1900
         print("Opening servo")
       else:
-        pwm = 1100
+        if drone_name == "futuna":
+          pwm = 1900
+        else:
+          pwm = 1100
         print("Closing servo")
         
     # Servo enrouleur
