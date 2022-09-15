@@ -83,7 +83,10 @@ class Drone:
         if drone_name == "futuna":
           pwm = 1900
         else:
-          pwm = 1100
+          if drone_name == "walle":
+            pwm = 1200
+          else:
+            pwm = 1100
         print("Closing servo")
         
     # Servo enrouleur
